@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres-rentacar
+    environment:
+      POSTGRES_DB: rentacarnow
+      POSTGRES_USER: rentacarnow
+      POSTGRES_PASSWORD: rentacarnow
+    ports:
+      - "5430:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
