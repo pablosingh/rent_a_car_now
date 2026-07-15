@@ -1,9 +1,11 @@
 package com.digitalhouse.rentacarnow.repository;
 
-import com.digitalhouse.rentacarnow.entity.Car;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.digitalhouse.rentacarnow.entity.Reservation;
+
 @Repository
-public interface CarRepository extends JpaRepository<Car, Long> {
+public interface ReservationRepository extends JpaRepository<Reservation, Long>{
+  
 }

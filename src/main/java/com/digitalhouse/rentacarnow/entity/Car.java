@@ -1,5 +1,6 @@
 package com.digitalhouse.rentacarnow.entity;
 
+import java.util.List;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -36,4 +37,7 @@ public class Car {
 
     @Column(nullable = false)
     private Boolean available;
+
+    @OneToMany(mappedBy = "car")
+    private List<Reservation> reservations;
 }
