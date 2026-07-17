@@ -1,6 +1,5 @@
 package com.digitalhouse.rentacarnow.entity;
 
-import jakarta.annotation.Generated;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

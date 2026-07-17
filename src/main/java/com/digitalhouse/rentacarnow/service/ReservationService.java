@@ -11,7 +11,7 @@ public interface ReservationService {
 
   Reservation createReservation(Integer durationInDays, Long car_id, Long user_id);
 
-  Reservation updateReservation(Integer durationInDays, Long car_id, Long user_id);
+  Reservation updateReservation(Long id, Integer durationInDays, Long car_id, Long user_id);
 
   void deleteReservationById(Long id);
 }
