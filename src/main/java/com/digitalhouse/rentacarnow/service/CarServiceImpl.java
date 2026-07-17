@@ -16,26 +16,46 @@ public class CarServiceImpl implements CarService{
 
     @Override
     public List<Car> findAll() {
-        return List.of();
+        return carRepository.findAll();
     }
 
     @Override
     public Car findByPlate(String plate) {
-        return null;
+        return carRepository.findByPlate(plate)
+                .orElseThrow(() -> new RuntimeException("Car not found with plate: " + plate));
     }
 
     @Override
     public Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available) {
-        return null;
+        Car car = new Car();
+        car.setPlate(plate);
+        car.setBrand(brand);
+        car.setModel(model);
+        car.setYear(year);
+        car.setPricePerDay(pricePerDay);
+        car.setPricePerHour(pricePerHour);
+        car.setAvailable(available);
+        return carRepository.save(car);
     }
 
     @Override
     public void deleteCarById(Long id) {
-
+        if (!carRepository.existsById(id)) {
+            throw new RuntimeException("Car not found with id: " + id);
+        }
+        carRepository.deleteById(id);
     }
 
     @Override
     public Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available) {
-        return null;
+        Car car = carRepository.findByPlate(plate)
+                .orElseThrow(() -> new RuntimeException("Car not found with plate: " + plate));
+        car.setBrand(brand);
+        car.setModel(model);
+        car.setYear(year);
+        car.setPricePerDay(pricePerDay);
+        car.setPricePerHour(pricePerHour);
+        car.setAvailable(available);
+        return carRepository.save(car);
     }
 }
