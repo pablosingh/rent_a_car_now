@@ -2,6 +2,7 @@ package com.digitalhouse.rentacarnow.service;
 
 import com.digitalhouse.rentacarnow.entity.Car;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -17,4 +18,7 @@ public interface CarService {
 
     Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available);
 
+    Car uploadImage(String plate, MultipartFile file);
+
+    void deleteImage(String plate, String imagePath);
 }

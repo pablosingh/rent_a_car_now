@@ -4,6 +4,7 @@ import com.digitalhouse.rentacarnow.dto.ApiResponse;
 import com.digitalhouse.rentacarnow.entity.Car;
 import com.digitalhouse.rentacarnow.service.CarService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -52,5 +53,18 @@ public class CarController {
                                       @RequestParam Double pricePerHour,
                                       @RequestParam Boolean available) {
         return ApiResponse.success(carService.updateCar(plate, brand, model, year, pricePerDay, pricePerHour, available));
+    }
+
+    @PostMapping("/{plate}/images")
+    public ApiResponse<Car> uploadImage(@PathVariable String plate,
+                                        @RequestParam("file") MultipartFile file) {
+        return ApiResponse.success(carService.uploadImage(plate, file));
+    }
+
+    @DeleteMapping("/{plate}/images")
+    public ApiResponse<Car> deleteImage(@PathVariable String plate,
+                                        @RequestParam String imagePath) {
+        carService.deleteImage(plate, imagePath);
+        return ApiResponse.success(carService.findByPlate(plate));
     }
 }

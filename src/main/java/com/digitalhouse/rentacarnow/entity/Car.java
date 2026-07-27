@@ -1,5 +1,6 @@
 package com.digitalhouse.rentacarnow.entity;
 
+import java.util.ArrayList;
 import java.util.List;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -38,6 +39,11 @@ public class Car {
 
     @Column(nullable = false)
     private Boolean available;
+
+    @ElementCollection
+    @CollectionTable(name = "car_images", joinColumns = @JoinColumn(name = "car_id"))
+    @Column(name = "image_path")
+    private List<String> imagePaths = new ArrayList<>();
 
     @OneToMany(mappedBy = "car", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
