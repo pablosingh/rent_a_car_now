@@ -28,14 +28,9 @@ public class CarController {
     }
 
     @PostMapping
-    public ApiResponse<Car> createCar(@RequestParam String plate,
-                                      @RequestParam String brand,
-                                      @RequestParam String model,
-                                      @RequestParam Integer year,
-                                      @RequestParam Double pricePerDay,
-                                      @RequestParam Double pricePerHour,
-                                      @RequestParam Boolean available) {
-        return ApiResponse.success(carService.createCar(plate, brand, model, year, pricePerDay, pricePerHour, available));
+    public ApiResponse<Car> createCar(@RequestBody Car car) {
+        return ApiResponse.success(carService.createCar(car.getPlate(), car.getBrand(), car.getModel(),
+                car.getYear(), car.getPricePerDay(), car.getPricePerHour(), car.getAvailable()));
     }
 
     @DeleteMapping("/{id}")

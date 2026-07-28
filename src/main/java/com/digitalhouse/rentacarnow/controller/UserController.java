@@ -27,11 +27,9 @@ public class UserController {
     }
 
     @PostMapping
-    public ApiResponse<User> createUser(@RequestParam String name,
-                                        @RequestParam String lastName,
-                                        @RequestParam String email,
-                                        @RequestParam String password) {
-        return ApiResponse.success(userService.createUser(name, lastName, email, password));
+    public ApiResponse<User> createUser(@RequestBody User user) {
+        return ApiResponse.success(userService.createUser(user.getName(), user.getLastName(),
+                user.getEmail(), user.getPassword()));
     }
 
     @DeleteMapping("/{id}")
