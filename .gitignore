@@ -31,3 +31,13 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Postman ###
+.postman/
+postman/
+
+### Uploads ###
+uploads/
+
+### Agents ###
+AGENTS.md

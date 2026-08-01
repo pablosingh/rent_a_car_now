@@ -10,6 +10,30 @@ services:
       - "5430:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rentacarnow -d rentacarnow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: rentacarnow-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/rentacarnow
+      SPRING_DATASOURCE_USERNAME: rentacarnow
+      SPRING_DATASOURCE_PASSWORD: rentacarnow
+      APP_UPLOAD_DIR: /app/uploads/cars
+    volumes:
+      - .:/app
+      - ../uploads:/app/uploads
 
 volumes:
   pgdata:

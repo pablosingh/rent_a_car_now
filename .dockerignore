@@ -1,0 +1,13 @@
+.git
+.gitignore
+.gitattributes
+AGENTS.md
+HELP.md
+target
+.idea
+.vscode
+.mvn
+postman
+.postman
+uploads
+*.log
