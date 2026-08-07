@@ -1,6 +1,7 @@
 package com.digitalhouse.rentacarnow.service;
 
 import com.digitalhouse.rentacarnow.entity.Car;
+import com.digitalhouse.rentacarnow.exception.ConflictException;
 import com.digitalhouse.rentacarnow.repository.CarRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,6 +31,9 @@ public class CarServiceImpl implements CarService{
 
     @Override
     public Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available) {
+        if (carRepository.findByPlate(plate).isPresent()) {
+            throw new ConflictException("Ya existe un auto con la patente: " + plate);
+        }
         Car car = new Car();
         car.setPlate(plate);
         car.setBrand(brand);
