@@ -3,6 +3,8 @@ package com.digitalhouse.rentacarnow.service;
 import com.digitalhouse.rentacarnow.entity.Car;
 import com.digitalhouse.rentacarnow.exception.ConflictException;
 import com.digitalhouse.rentacarnow.repository.CarRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,8 +21,11 @@ public class CarServiceImpl implements CarService{
     }
 
     @Override
-    public List<Car> findAll() {
-        return carRepository.findAll();
+    public Page<Car> findAll(Boolean available, Pageable pageable) {
+        if (available == null) {
+            return carRepository.findAll(pageable);
+        }
+        return carRepository.findByAvailable(available, pageable);
     }
 
     @Override

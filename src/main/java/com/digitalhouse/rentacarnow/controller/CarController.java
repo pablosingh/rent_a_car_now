@@ -1,12 +1,14 @@
 package com.digitalhouse.rentacarnow.controller;
 
 import com.digitalhouse.rentacarnow.dto.ApiResponse;
+import com.digitalhouse.rentacarnow.dto.PageResponse;
 import com.digitalhouse.rentacarnow.entity.Car;
 import com.digitalhouse.rentacarnow.service.CarService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/cars")
@@ -18,8 +20,11 @@ public class CarController {
     }
 
     @GetMapping
-    public ApiResponse<List<Car>> findAll() {
-        return ApiResponse.success(carService.findAll());
+    public ApiResponse<PageResponse<Car>> findAll(
+            @RequestParam(required = false) Boolean available,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<Car> page = carService.findAll(available, pageable);
+        return ApiResponse.success(PageResponse.from(page));
     }
 
     @GetMapping("/{plate}")
