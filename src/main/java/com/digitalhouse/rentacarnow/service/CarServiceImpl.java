@@ -29,6 +29,15 @@ public class CarServiceImpl implements CarService{
     }
 
     @Override
+    public List<Car> findRandom(Integer limit, Boolean available) {
+        int size = limit == null ? 10 : Math.min(limit, 50);
+        if (size <= 0) {
+            return List.of();
+        }
+        return carRepository.findRandom(size, available);
+    }
+
+    @Override
     public Car findByPlate(String plate) {
         return carRepository.findByPlate(plate)
                 .orElseThrow(() -> new RuntimeException("Car not found with plate: " + plate));

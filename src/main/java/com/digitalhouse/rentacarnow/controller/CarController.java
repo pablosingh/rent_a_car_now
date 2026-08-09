@@ -10,6 +10,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/cars")
 public class CarController {
@@ -25,6 +27,13 @@ public class CarController {
             @PageableDefault(size = 10) Pageable pageable) {
         Page<Car> page = carService.findAll(available, pageable);
         return ApiResponse.success(PageResponse.from(page));
+    }
+
+    @GetMapping("/random")
+    public ApiResponse<List<Car>> findRandom(
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) Boolean available) {
+        return ApiResponse.success(carService.findRandom(limit, available));
     }
 
     @GetMapping("/{plate}")
