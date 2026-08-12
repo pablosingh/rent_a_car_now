@@ -1,7 +1,9 @@
 package com.digitalhouse.rentacarnow.service;
 
 import com.digitalhouse.rentacarnow.entity.User;
+import com.digitalhouse.rentacarnow.exception.ConflictException;
 import com.digitalhouse.rentacarnow.repository.UserRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -9,9 +11,11 @@ import java.util.List;
 @Service
 public class UserServiceImpl implements UserService{
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository){
+    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder){
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -35,11 +39,14 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public User createUser(String name, String lastName, String email, String password) {
+        if (userRepository.existsByEmail(email)) {
+            throw new ConflictException("Ya existe un usuario con ese email.");
+        }
         User user = new User();
         user.setName(name);
         user.setLastName(lastName);
         user.setEmail(email);
-        user.setPassword(password);
+        user.setPassword(passwordEncoder.encode(password));
         return userRepository.save(user);
     }
 

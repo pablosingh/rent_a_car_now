@@ -28,8 +28,10 @@ public class UserController {
 
     @PostMapping
     public ApiResponse<User> createUser(@RequestBody User user) {
-        return ApiResponse.success(userService.createUser(user.getName(), user.getLastName(),
-                user.getEmail(), user.getPassword()));
+        User created = userService.createUser(user.getName(), user.getLastName(),
+                user.getEmail(), user.getPassword());
+        created.setPassword(null);
+        return ApiResponse.success(created);
     }
 
     @DeleteMapping("/{id}")
