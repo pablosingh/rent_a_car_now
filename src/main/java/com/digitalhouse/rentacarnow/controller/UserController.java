@@ -1,8 +1,15 @@
 package com.digitalhouse.rentacarnow.controller;
 
 import com.digitalhouse.rentacarnow.dto.ApiResponse;
+import com.digitalhouse.rentacarnow.dto.LoginRequest;
+import com.digitalhouse.rentacarnow.dto.LoginResponse;
 import com.digitalhouse.rentacarnow.entity.User;
+import com.digitalhouse.rentacarnow.security.JwtService;
 import com.digitalhouse.rentacarnow.service.UserService;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,9 +18,15 @@ import java.util.List;
 @RequestMapping("/api/users")
 public class UserController {
     private final UserService userService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
-    public UserController(UserService userService){
+    public UserController(UserService userService,
+                          AuthenticationManager authenticationManager,
+                          JwtService jwtService) {
         this.userService = userService;
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
     }
 
     @GetMapping
@@ -24,6 +37,16 @@ public class UserController {
     @GetMapping("/{email}")
     public ApiResponse<User> findByEmail(@PathVariable String email) {
         return ApiResponse.success(userService.findByEmail(email));
+    }
+
+    @PostMapping("/login")
+    public ApiResponse<LoginResponse> login(@RequestBody LoginRequest request) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User user = userService.findByEmail(userDetails.getUsername());
+        String token = jwtService.generateToken(userDetails);
+        return ApiResponse.success(new LoginResponse(token, user));
     }
 
     @PostMapping
