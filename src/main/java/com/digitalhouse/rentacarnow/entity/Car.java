@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -40,7 +41,8 @@ public class Car {
     @Column(nullable = false)
     private Boolean available;
 
-    @Column
+    @Column(nullable = false)
+    @NotBlank(message = "La categoría es obligatoria.")
     private String category;
 
     @ElementCollection

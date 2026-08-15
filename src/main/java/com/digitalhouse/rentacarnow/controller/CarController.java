@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -44,7 +45,7 @@ public class CarController {
     }
 
     @PostMapping
-    public ApiResponse<Car> createCar(@RequestBody Car car) {
+    public ApiResponse<Car> createCar(@Valid @RequestBody Car car) {
         return ApiResponse.success(carService.createCar(car.getPlate(), car.getBrand(), car.getModel(),
                 car.getYear(), car.getPricePerDay(), car.getPricePerHour(), car.getAvailable(), car.getCategory()));
     }
