@@ -6,11 +6,14 @@ import com.digitalhouse.rentacarnow.dto.LoginResponse;
 import com.digitalhouse.rentacarnow.entity.User;
 import com.digitalhouse.rentacarnow.security.JwtService;
 import com.digitalhouse.rentacarnow.service.UserService;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -55,6 +58,17 @@ public class UserController {
                 user.getEmail(), user.getPassword());
         created.setPassword(null);
         return ApiResponse.success(created);
+    }
+
+    @PostMapping("/{id}/photo")
+    public ApiResponse<User> uploadPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        User target = userService.findById(id);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User current = userService.findByEmail(authentication.getName());
+        if (!current.getRole().equals("ADMIN") && !current.getEmail().equals(target.getEmail())) {
+            throw new AccessDeniedException("No tenés permiso para cambiar esta foto.");
+        }
+        return ApiResponse.success(userService.uploadPhoto(id, file));
     }
 
     @DeleteMapping("/{id}")

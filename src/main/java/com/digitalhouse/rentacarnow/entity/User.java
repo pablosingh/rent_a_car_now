@@ -36,6 +36,8 @@ public class User {
     @Column(nullable = false)
     private String role = "USER";
 
+    private String photoPath;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Reservation> reservations;
