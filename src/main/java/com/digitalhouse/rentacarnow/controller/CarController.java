@@ -24,16 +24,18 @@ public class CarController {
     @GetMapping
     public ApiResponse<PageResponse<Car>> findAll(
             @RequestParam(required = false) Boolean available,
+            @RequestParam(required = false) String category,
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<Car> page = carService.findAll(available, pageable);
+        Page<Car> page = carService.findAll(available, category, pageable);
         return ApiResponse.success(PageResponse.from(page));
     }
 
     @GetMapping("/random")
     public ApiResponse<List<Car>> findRandom(
             @RequestParam(required = false) Integer limit,
-            @RequestParam(required = false) Boolean available) {
-        return ApiResponse.success(carService.findRandom(limit, available));
+            @RequestParam(required = false) Boolean available,
+            @RequestParam(required = false) String category) {
+        return ApiResponse.success(carService.findRandom(limit, available, category));
     }
 
     @GetMapping("/{plate}")
@@ -44,7 +46,7 @@ public class CarController {
     @PostMapping
     public ApiResponse<Car> createCar(@RequestBody Car car) {
         return ApiResponse.success(carService.createCar(car.getPlate(), car.getBrand(), car.getModel(),
-                car.getYear(), car.getPricePerDay(), car.getPricePerHour(), car.getAvailable()));
+                car.getYear(), car.getPricePerDay(), car.getPricePerHour(), car.getAvailable(), car.getCategory()));
     }
 
     @DeleteMapping("/{id}")
@@ -60,8 +62,9 @@ public class CarController {
                                       @RequestParam Integer year,
                                       @RequestParam Double pricePerDay,
                                       @RequestParam Double pricePerHour,
-                                      @RequestParam Boolean available) {
-        return ApiResponse.success(carService.updateCar(plate, brand, model, year, pricePerDay, pricePerHour, available));
+                                      @RequestParam Boolean available,
+                                      @RequestParam String category) {
+        return ApiResponse.success(carService.updateCar(plate, brand, model, year, pricePerDay, pricePerHour, available, category));
     }
 
     @PostMapping("/{plate}/images")

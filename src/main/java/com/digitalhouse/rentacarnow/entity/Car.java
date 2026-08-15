@@ -40,6 +40,9 @@ public class Car {
     @Column(nullable = false)
     private Boolean available;
 
+    @Column
+    private String category;
+
     @ElementCollection
     @CollectionTable(name = "car_images", joinColumns = @JoinColumn(name = "car_id"))
     @Column(name = "image_path")

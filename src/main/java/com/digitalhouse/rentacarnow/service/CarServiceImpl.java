@@ -21,20 +21,26 @@ public class CarServiceImpl implements CarService{
     }
 
     @Override
-    public Page<Car> findAll(Boolean available, Pageable pageable) {
-        if (available == null) {
+    public Page<Car> findAll(Boolean available, String category, Pageable pageable) {
+        if (available == null && category == null) {
             return carRepository.findAll(pageable);
         }
-        return carRepository.findByAvailable(available, pageable);
+        if (available == null) {
+            return carRepository.findByCategory(category, pageable);
+        }
+        if (category == null) {
+            return carRepository.findByAvailable(available, pageable);
+        }
+        return carRepository.findByCategoryAndAvailable(category, available, pageable);
     }
 
     @Override
-    public List<Car> findRandom(Integer limit, Boolean available) {
+    public List<Car> findRandom(Integer limit, Boolean available, String category) {
         int size = limit == null ? 10 : Math.min(limit, 50);
         if (size <= 0) {
             return List.of();
         }
-        return carRepository.findRandom(size, available);
+        return carRepository.findRandom(size, available, category);
     }
 
     @Override
@@ -44,7 +50,7 @@ public class CarServiceImpl implements CarService{
     }
 
     @Override
-    public Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available) {
+    public Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available, String category) {
         if (carRepository.findByPlate(plate).isPresent()) {
             throw new ConflictException("Ya existe un auto con la patente: " + plate);
         }
@@ -56,6 +62,7 @@ public class CarServiceImpl implements CarService{
         car.setPricePerDay(pricePerDay);
         car.setPricePerHour(pricePerHour);
         car.setAvailable(available);
+        car.setCategory(category);
         return carRepository.save(car);
     }
 
@@ -70,7 +77,7 @@ public class CarServiceImpl implements CarService{
     }
 
     @Override
-    public Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available) {
+    public Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available, String category) {
         Car car = carRepository.findByPlate(plate)
                 .orElseThrow(() -> new RuntimeException("Car not found with plate: " + plate));
         car.setBrand(brand);
@@ -79,6 +86,7 @@ public class CarServiceImpl implements CarService{
         car.setPricePerDay(pricePerDay);
         car.setPricePerHour(pricePerHour);
         car.setAvailable(available);
+        car.setCategory(category);
         return carRepository.save(car);
     }
 

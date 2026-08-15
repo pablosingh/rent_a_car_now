@@ -10,17 +10,17 @@ import java.util.List;
 
 public interface CarService {
 
-    Page<Car> findAll(Boolean available, Pageable pageable);
+    Page<Car> findAll(Boolean available, String category, Pageable pageable);
 
-    List<Car> findRandom(Integer limit, Boolean available);
+    List<Car> findRandom(Integer limit, Boolean available, String category);
 
     Car findByPlate(String plate);
 
-    Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available);
+    Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available, String category);
 
     void deleteCarById(Long id);
 
-    Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available);
+    Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available, String category);
 
     Car uploadImage(String plate, MultipartFile file);
 

@@ -17,7 +17,11 @@ public interface CarRepository extends JpaRepository<Car, Long> {
 
     Page<Car> findByAvailable(Boolean available, Pageable pageable);
 
-    @Query(value = "SELECT * FROM car WHERE (:available IS NULL OR available = :available) ORDER BY random() LIMIT :limit",
+    Page<Car> findByCategory(String category, Pageable pageable);
+
+    Page<Car> findByCategoryAndAvailable(String category, Boolean available, Pageable pageable);
+
+    @Query(value = "SELECT * FROM car WHERE (:category IS NULL OR category = :category) AND (:available IS NULL OR available = :available) ORDER BY random() LIMIT :limit",
             nativeQuery = true)
-    List<Car> findRandom(@Param("limit") int limit, @Param("available") Boolean available);
+    List<Car> findRandom(@Param("limit") int limit, @Param("available") Boolean available, @Param("category") String category);
 }
