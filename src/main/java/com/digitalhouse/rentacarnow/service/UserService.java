@@ -15,9 +15,11 @@ public interface UserService {
 
     void deleteById(Integer id);
 
-    User createUser(String name, String lastName, String email, String password);
+    User createUser(String name, String lastName, String email, String password, MultipartFile file);
 
     User updateUser(User newUser);
 
     User uploadPhoto(Long id, MultipartFile file);
+
+    User deletePhoto(Long id);
 }

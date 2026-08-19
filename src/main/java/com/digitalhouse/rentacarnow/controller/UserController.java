@@ -53,22 +53,39 @@ public class UserController {
     }
 
     @PostMapping
-    public ApiResponse<User> createUser(@RequestBody User user) {
-        User created = userService.createUser(user.getName(), user.getLastName(),
-                user.getEmail(), user.getPassword());
+    public ApiResponse<User> createUser(@RequestParam String name,
+                                        @RequestParam String lastName,
+                                        @RequestParam String email,
+                                        @RequestParam String password,
+                                        @RequestParam(value = "file", required = false) MultipartFile file) {
+        User created = userService.createUser(name, lastName, email, password, file);
         created.setPassword(null);
         return ApiResponse.success(created);
     }
 
-    @PostMapping("/{id}/photo")
-    public ApiResponse<User> uploadPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
-        User target = userService.findById(id);
+    private User requireCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User current = userService.findByEmail(authentication.getName());
+        return userService.findByEmail(authentication.getName());
+    }
+
+    private void assertCanModifyPhoto(Long id) {
+        User target = userService.findById(id);
+        User current = requireCurrentUser();
         if (!current.getRole().equals("ADMIN") && !current.getEmail().equals(target.getEmail())) {
             throw new AccessDeniedException("No tenés permiso para cambiar esta foto.");
         }
+    }
+
+    @PostMapping("/{id}/photo")
+    public ApiResponse<User> uploadPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        assertCanModifyPhoto(id);
         return ApiResponse.success(userService.uploadPhoto(id, file));
+    }
+
+    @DeleteMapping("/{id}/photo")
+    public ApiResponse<User> deletePhoto(@PathVariable Long id) {
+        assertCanModifyPhoto(id);
+        return ApiResponse.success(userService.deletePhoto(id));
     }
 
     @DeleteMapping("/{id}")

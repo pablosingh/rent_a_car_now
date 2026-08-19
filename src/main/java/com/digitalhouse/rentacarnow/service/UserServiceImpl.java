@@ -41,14 +41,16 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public void deleteById(Integer id) {
-        if (!userRepository.existsById(id.longValue())) {
-            throw new RuntimeException("User not found with id: " + id);
+        User user = userRepository.findById(id.longValue())
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        if (user.getPhotoPath() != null) {
+            fileStorageService.deleteFile(user.getPhotoPath());
         }
         userRepository.deleteById(id.longValue());
     }
 
     @Override
-    public User createUser(String name, String lastName, String email, String password) {
+    public User createUser(String name, String lastName, String email, String password, MultipartFile file) {
         if (userRepository.existsByEmail(email)) {
             throw new ConflictException("Ya existe un usuario con ese email.");
         }
@@ -58,6 +60,9 @@ public class UserServiceImpl implements UserService{
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
         user.setRole("USER");
+        if (file != null && !file.isEmpty()) {
+            user.setPhotoPath(fileStorageService.saveFile(file));
+        }
         return userRepository.save(user);
     }
 
@@ -81,7 +86,22 @@ public class UserServiceImpl implements UserService{
     public User uploadPhoto(Long id, MultipartFile file) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        if (user.getPhotoPath() != null) {
+            fileStorageService.deleteFile(user.getPhotoPath());
+        }
         user.setPhotoPath(fileStorageService.saveFile(file));
         return userRepository.save(user);
+    }
+
+    @Override
+    public User deletePhoto(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        if (user.getPhotoPath() != null) {
+            fileStorageService.deleteFile(user.getPhotoPath());
+            user.setPhotoPath(null);
+            return userRepository.save(user);
+        }
+        return user;
     }
 }
