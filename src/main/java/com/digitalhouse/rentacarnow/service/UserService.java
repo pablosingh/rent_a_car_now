@@ -7,17 +7,21 @@ import java.util.List;
 
 public interface UserService {
 
-    List<User> findAll();
+    List<User> findAll(User requester);
 
     User findByEmail(String email);
 
     User findById(Long id);
 
-    void deleteById(Integer id);
+    void deleteById(Integer id, User requester);
 
-    User createUser(String name, String lastName, String email, String password, MultipartFile file);
+    User createUser(String name, String lastName, String email, String password, String role, MultipartFile file);
 
-    User updateUser(User newUser);
+    User createEmployee(String name, String lastName, String email, String password, MultipartFile file, User requester);
+
+    User verifyUser(Long id);
+
+    User updateUser(User newUser, User requester);
 
     User uploadPhoto(Long id, MultipartFile file);
 

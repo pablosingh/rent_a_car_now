@@ -36,10 +36,21 @@ public class User {
     @Column(nullable = false)
     private String role = "USER";
 
+    @Column(nullable = false)
+    private Boolean verified = false;
+
+    @ManyToOne
+    @JoinColumn(name = "owner_id")
+    private User owner;
+
     private String photoPath;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Reservation> reservations;
+
+    @OneToMany(mappedBy = "owner")
+    @JsonIgnore
+    private List<Car> ownedCars;
 
 }

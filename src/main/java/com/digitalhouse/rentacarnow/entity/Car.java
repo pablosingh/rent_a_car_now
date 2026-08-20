@@ -50,6 +50,10 @@ public class Car {
     @Column(name = "image_path")
     private List<String> imagePaths = new ArrayList<>();
 
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;
+
     @OneToMany(mappedBy = "car", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Reservation> reservations;
