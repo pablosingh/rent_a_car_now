@@ -10,11 +10,11 @@ import java.util.List;
 
 public interface CarService {
 
-    Page<Car> findAll(Boolean available, String category, Pageable pageable);
+    Page<Car> findAll(Boolean available, String category, String q, Pageable pageable);
 
     Page<Car> findByOwner(Long ownerId, Pageable pageable);
 
-    List<Car> findRandom(Integer limit, Boolean available, String category);
+    List<Car> findRandom(Integer limit, Boolean available, String category, String q);
 
     Car findByPlate(String plate);
 

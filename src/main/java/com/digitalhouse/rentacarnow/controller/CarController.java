@@ -30,10 +30,11 @@ public class CarController {
             @RequestParam(required = false) Boolean available,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Long ownerId,
+            @RequestParam(required = false) String q,
             @PageableDefault(size = 10) Pageable pageable) {
         Page<Car> page = ownerId != null
                 ? carService.findByOwner(ownerId, pageable)
-                : carService.findAll(available, category, pageable);
+                : carService.findAll(available, category, q, pageable);
         return ApiResponse.success(PageResponse.from(page));
     }
 
@@ -41,8 +42,9 @@ public class CarController {
     public ApiResponse<List<Car>> findRandom(
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Boolean available,
-            @RequestParam(required = false) String category) {
-        return ApiResponse.success(carService.findRandom(limit, available, category));
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String q) {
+        return ApiResponse.success(carService.findRandom(limit, available, category, q));
     }
 
     @GetMapping("/{plate}")

@@ -28,7 +28,10 @@ public class CarServiceImpl implements CarService {
     }
 
     @Override
-    public Page<Car> findAll(Boolean available, String category, Pageable pageable) {
+    public Page<Car> findAll(Boolean available, String category, String q, Pageable pageable) {
+        if (q != null && !q.isBlank()) {
+            return carRepository.search(q, category, available, pageable);
+        }
         if (available == null && category == null) {
             return carRepository.findAll(pageable);
         }
@@ -47,10 +50,13 @@ public class CarServiceImpl implements CarService {
     }
 
     @Override
-    public List<Car> findRandom(Integer limit, Boolean available, String category) {
+    public List<Car> findRandom(Integer limit, Boolean available, String category, String q) {
         int size = limit == null ? 10 : Math.min(limit, 50);
         if (size <= 0) {
             return List.of();
+        }
+        if (q != null && !q.isBlank()) {
+            return carRepository.findRandomWithSearch(size, available, category, q);
         }
         return carRepository.findRandom(size, available, category);
     }
