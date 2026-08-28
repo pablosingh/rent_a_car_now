@@ -7,22 +7,23 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Set;
 
 public interface CarService {
 
-    Page<Car> findAll(Boolean available, String category, String q, Pageable pageable);
+    Page<Car> findAll(Boolean available, String category, String q, String feature, Pageable pageable);
 
     Page<Car> findByOwner(Long ownerId, Pageable pageable);
 
-    List<Car> findRandom(Integer limit, Boolean available, String category, String q);
+    List<Car> findRandom(Integer limit, Boolean available, String category, String q, String feature);
 
     Car findByPlate(String plate);
 
-    Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available, String category, Long ownerId, User requester);
+    Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available, String category, Set<Long> featureIds, Long ownerId, User requester);
 
     void deleteCarById(Long id, User requester);
 
-    Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available, String category, User requester);
+    Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available, String category, Set<Long> featureIds, User requester);
 
     Car uploadImage(String plate, MultipartFile file, User requester);
 

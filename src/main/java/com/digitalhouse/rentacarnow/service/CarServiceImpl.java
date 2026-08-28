@@ -1,9 +1,11 @@
 package com.digitalhouse.rentacarnow.service;
 
 import com.digitalhouse.rentacarnow.entity.Car;
+import com.digitalhouse.rentacarnow.entity.Feature;
 import com.digitalhouse.rentacarnow.entity.User;
 import com.digitalhouse.rentacarnow.exception.ConflictException;
 import com.digitalhouse.rentacarnow.repository.CarRepository;
+import com.digitalhouse.rentacarnow.repository.FeatureRepository;
 import com.digitalhouse.rentacarnow.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,26 +13,33 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class CarServiceImpl implements CarService {
 
     private final CarRepository carRepository;
     private final UserRepository userRepository;
+    private final FeatureRepository featureRepository;
     private final FileStorageService fileStorageService;
 
     public CarServiceImpl(CarRepository carRepository, UserRepository userRepository,
-                          FileStorageService fileStorageService) {
+                          FeatureRepository featureRepository, FileStorageService fileStorageService) {
         this.carRepository = carRepository;
         this.userRepository = userRepository;
+        this.featureRepository = featureRepository;
         this.fileStorageService = fileStorageService;
     }
 
     @Override
-    public Page<Car> findAll(Boolean available, String category, String q, Pageable pageable) {
+    public Page<Car> findAll(Boolean available, String category, String q, String feature, Pageable pageable) {
         if (q != null && !q.isBlank()) {
-            return carRepository.search(q, category, available, pageable);
+            return carRepository.search(q, category, available, feature, pageable);
+        }
+        if (feature != null && !feature.isBlank()) {
+            return carRepository.findByFeatureName(feature, pageable);
         }
         if (available == null && category == null) {
             return carRepository.findAll(pageable);
@@ -50,13 +59,16 @@ public class CarServiceImpl implements CarService {
     }
 
     @Override
-    public List<Car> findRandom(Integer limit, Boolean available, String category, String q) {
+    public List<Car> findRandom(Integer limit, Boolean available, String category, String q, String feature) {
         int size = limit == null ? 10 : Math.min(limit, 50);
         if (size <= 0) {
             return List.of();
         }
         if (q != null && !q.isBlank()) {
-            return carRepository.findRandomWithSearch(size, available, category, q);
+            return carRepository.findRandomWithSearch(size, available, category, q, feature);
+        }
+        if (feature != null && !feature.isBlank()) {
+            return carRepository.findRandomByFeature(size, available, category, feature);
         }
         return carRepository.findRandom(size, available, category);
     }
@@ -69,7 +81,8 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay,
-                         Double pricePerHour, Boolean available, String category, Long ownerId, User requester) {
+                         Double pricePerHour, Boolean available, String category, Set<Long> featureIds,
+                         Long ownerId, User requester) {
         if (carRepository.findByPlate(plate).isPresent()) {
             throw new ConflictException("Ya existe un auto con la patente: " + plate);
         }
@@ -84,6 +97,7 @@ public class CarServiceImpl implements CarService {
         car.setAvailable(available);
         car.setCategory(category);
         car.setOwner(owner);
+        car.setFeatures(resolveFeatures(featureIds));
         return carRepository.save(car);
     }
 
@@ -100,7 +114,8 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay,
-                         Double pricePerHour, Boolean available, String category, User requester) {
+                         Double pricePerHour, Boolean available, String category, Set<Long> featureIds,
+                         User requester) {
         Car car = carRepository.findByPlate(plate)
                 .orElseThrow(() -> new RuntimeException("Car not found with plate: " + plate));
         assertCanManage(car, requester);
@@ -111,6 +126,7 @@ public class CarServiceImpl implements CarService {
         car.setPricePerHour(pricePerHour);
         car.setAvailable(available);
         car.setCategory(category);
+        car.setFeatures(resolveFeatures(featureIds));
         return carRepository.save(car);
     }
 
@@ -173,5 +189,12 @@ public class CarServiceImpl implements CarService {
             return;
         }
         throw new AccessDeniedException("No tenés permiso para gestionar este auto.");
+    }
+
+    private Set<Feature> resolveFeatures(Set<Long> featureIds) {
+        if (featureIds == null || featureIds.isEmpty()) {
+            return new HashSet<>();
+        }
+        return new HashSet<>(featureRepository.findAllById(featureIds));
     }
 }

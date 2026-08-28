@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/cars")
@@ -31,10 +32,11 @@ public class CarController {
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Long ownerId,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) String feature,
             @PageableDefault(size = 10) Pageable pageable) {
         Page<Car> page = ownerId != null
                 ? carService.findByOwner(ownerId, pageable)
-                : carService.findAll(available, category, q, pageable);
+                : carService.findAll(available, category, q, feature, pageable);
         return ApiResponse.success(PageResponse.from(page));
     }
 
@@ -43,8 +45,9 @@ public class CarController {
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Boolean available,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String q) {
-        return ApiResponse.success(carService.findRandom(limit, available, category, q));
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String feature) {
+        return ApiResponse.success(carService.findRandom(limit, available, category, q, feature));
     }
 
     @GetMapping("/{plate}")
@@ -55,9 +58,12 @@ public class CarController {
     @PostMapping
     public ApiResponse<Car> createCar(@Valid @RequestBody Car car,
                                       @RequestParam(required = false) Long ownerId) {
+        Set<Long> featureIds = car.getFeatures() != null
+                ? car.getFeatures().stream().map(f -> f.getId()).collect(java.util.stream.Collectors.toSet())
+                : Set.of();
         return ApiResponse.success(carService.createCar(car.getPlate(), car.getBrand(), car.getModel(),
                 car.getYear(), car.getPricePerDay(), car.getPricePerHour(), car.getAvailable(), car.getCategory(),
-                ownerId, currentUserService.currentUser()));
+                featureIds, ownerId, currentUserService.currentUser()));
     }
 
     @DeleteMapping("/{id}")
@@ -68,14 +74,13 @@ public class CarController {
 
     @PutMapping("/{plate}")
     public ApiResponse<Car> updateCar(@PathVariable String plate,
-                                      @RequestParam String brand,
-                                      @RequestParam String model,
-                                      @RequestParam Integer year,
-                                      @RequestParam Double pricePerDay,
-                                      @RequestParam Double pricePerHour,
-                                      @RequestParam Boolean available,
-                                      @RequestParam String category) {
-        return ApiResponse.success(carService.updateCar(plate, brand, model, year, pricePerDay, pricePerHour, available, category, currentUserService.currentUser()));
+                                      @RequestBody Car car) {
+        Set<Long> featureIds = car.getFeatures() != null
+                ? car.getFeatures().stream().map(f -> f.getId()).collect(java.util.stream.Collectors.toSet())
+                : Set.of();
+        return ApiResponse.success(carService.updateCar(plate, car.getBrand(), car.getModel(),
+                car.getYear(), car.getPricePerDay(), car.getPricePerHour(), car.getAvailable(),
+                car.getCategory(), featureIds, currentUserService.currentUser()));
     }
 
     @PostMapping("/{plate}/images")
