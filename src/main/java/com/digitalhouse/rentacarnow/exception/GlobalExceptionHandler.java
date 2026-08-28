@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException ex) {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(409, "Ya existe un auto con esa patente."));
+                .body(ApiResponse.error(409, "Error de integridad en la base de datos."));
     }
 
     @ExceptionHandler(AccessDeniedException.class)

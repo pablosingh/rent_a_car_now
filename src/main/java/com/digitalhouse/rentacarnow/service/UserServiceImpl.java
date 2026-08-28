@@ -125,9 +125,9 @@ public class UserServiceImpl implements UserService {
         if (!"ADMIN".equals(requester.getRole()) && !canManage(requester, user)) {
             throw new AccessDeniedException("No tenés permiso para modificar este usuario.");
         }
-        user.setName(newUser.getName());
-        user.setLastName(newUser.getLastName());
-        user.setEmail(newUser.getEmail());
+        if (newUser.getName() != null) user.setName(newUser.getName());
+        if (newUser.getLastName() != null) user.setLastName(newUser.getLastName());
+        if (newUser.getEmail() != null) user.setEmail(newUser.getEmail());
         if (newUser.getPassword() != null && !newUser.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(newUser.getPassword()));
         }
