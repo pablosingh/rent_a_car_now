@@ -23,6 +23,8 @@ public interface CarRepository extends JpaRepository<Car, Long> {
 
     Page<Car> findByOwner_Id(Long ownerId, Pageable pageable);
 
+    boolean existsByCategory(String category);
+
     @Query(value = "SELECT DISTINCT c.* FROM car c JOIN car_features cf ON c.id = cf.car_id JOIN feature f ON cf.feature_id = f.id WHERE f.name = :feature",
             countQuery = "SELECT COUNT(DISTINCT c.id) FROM car c JOIN car_features cf ON c.id = cf.car_id JOIN feature f ON cf.feature_id = f.id WHERE f.name = :feature",
             nativeQuery = true)

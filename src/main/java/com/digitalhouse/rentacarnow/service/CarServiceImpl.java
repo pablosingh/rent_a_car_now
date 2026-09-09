@@ -5,6 +5,7 @@ import com.digitalhouse.rentacarnow.entity.Feature;
 import com.digitalhouse.rentacarnow.entity.User;
 import com.digitalhouse.rentacarnow.exception.ConflictException;
 import com.digitalhouse.rentacarnow.repository.CarRepository;
+import com.digitalhouse.rentacarnow.repository.CategoryRepository;
 import com.digitalhouse.rentacarnow.repository.FeatureRepository;
 import com.digitalhouse.rentacarnow.repository.UserRepository;
 import org.springframework.data.domain.Page;
@@ -23,13 +24,15 @@ public class CarServiceImpl implements CarService {
     private final CarRepository carRepository;
     private final UserRepository userRepository;
     private final FeatureRepository featureRepository;
+    private final CategoryRepository categoryRepository;
     private final FileStorageService fileStorageService;
 
     public CarServiceImpl(CarRepository carRepository, UserRepository userRepository,
-                          FeatureRepository featureRepository, FileStorageService fileStorageService) {
+                          FeatureRepository featureRepository, CategoryRepository categoryRepository, FileStorageService fileStorageService) {
         this.carRepository = carRepository;
         this.userRepository = userRepository;
         this.featureRepository = featureRepository;
+        this.categoryRepository = categoryRepository;
         this.fileStorageService = fileStorageService;
     }
 
@@ -86,6 +89,7 @@ public class CarServiceImpl implements CarService {
         if (carRepository.findByPlate(plate).isPresent()) {
             throw new ConflictException("Ya existe un auto con la patente: " + plate);
         }
+        validateCategory(category);
         User owner = resolveOwner(ownerId, requester);
         Car car = new Car();
         car.setPlate(plate);
@@ -119,6 +123,7 @@ public class CarServiceImpl implements CarService {
         Car car = carRepository.findByPlate(plate)
                 .orElseThrow(() -> new RuntimeException("Car not found with plate: " + plate));
         assertCanManage(car, requester);
+        validateCategory(category);
         car.setBrand(brand);
         car.setModel(model);
         car.setYear(year);
@@ -189,6 +194,15 @@ public class CarServiceImpl implements CarService {
             return;
         }
         throw new AccessDeniedException("No tenés permiso para gestionar este auto.");
+    }
+
+    private void validateCategory(String category) {
+        if (category == null || category.isBlank()) {
+            throw new IllegalArgumentException("La categoría es obligatoria.");
+        }
+        if (!categoryRepository.existsByName(category)) {
+            throw new ConflictException("La categoría '" + category + "' no existe. Creala primero en /admin/categories.");
+        }
     }
 
     private Set<Feature> resolveFeatures(Set<Long> featureIds) {
