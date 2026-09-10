@@ -51,7 +51,7 @@ public class CategoryServiceImpl implements CategoryService {
     public void delete(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Category not found with id: " + id));
-        if (carRepository.existsByCategory(category.getName())) {
+        if (carRepository.existsByCategory_Id(id)) {
             throw new ConflictException("No se puede borrar la categoría '" + category.getName() + "' porque hay autos que la usan.");
         }
         categoryRepository.deleteById(id);

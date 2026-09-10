@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -43,9 +43,10 @@ public class Car {
     @Column(nullable = false)
     private Boolean available;
 
-    @Column(nullable = false)
-    @NotBlank(message = "La categoría es obligatoria.")
-    private String category;
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "category_id", nullable = false)
+    @NotNull(message = "La categoría es obligatoria.")
+    private Category category;
 
     @ElementCollection
     @CollectionTable(name = "car_images", joinColumns = @JoinColumn(name = "car_id"))

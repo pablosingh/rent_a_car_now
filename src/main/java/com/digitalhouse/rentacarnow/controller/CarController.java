@@ -61,8 +61,9 @@ public class CarController {
         Set<Long> featureIds = car.getFeatures() != null
                 ? car.getFeatures().stream().map(f -> f.getId()).collect(java.util.stream.Collectors.toSet())
                 : Set.of();
+        Long categoryId = car.getCategory() != null ? car.getCategory().getId() : null;
         return ApiResponse.success(carService.createCar(car.getPlate(), car.getBrand(), car.getModel(),
-                car.getYear(), car.getPricePerDay(), car.getPricePerHour(), car.getAvailable(), car.getCategory(),
+                car.getYear(), car.getPricePerDay(), car.getPricePerHour(), car.getAvailable(), categoryId,
                 featureIds, ownerId, currentUserService.currentUser()));
     }
 
@@ -78,9 +79,10 @@ public class CarController {
         Set<Long> featureIds = car.getFeatures() != null
                 ? car.getFeatures().stream().map(f -> f.getId()).collect(java.util.stream.Collectors.toSet())
                 : Set.of();
+        Long categoryId = car.getCategory() != null ? car.getCategory().getId() : null;
         return ApiResponse.success(carService.updateCar(plate, car.getBrand(), car.getModel(),
                 car.getYear(), car.getPricePerDay(), car.getPricePerHour(), car.getAvailable(),
-                car.getCategory(), featureIds, currentUserService.currentUser()));
+                categoryId, featureIds, currentUserService.currentUser()));
     }
 
     @PostMapping("/{plate}/images")

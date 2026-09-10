@@ -1,6 +1,7 @@
 package com.digitalhouse.rentacarnow.service;
 
 import com.digitalhouse.rentacarnow.entity.Car;
+import com.digitalhouse.rentacarnow.entity.Category;
 import com.digitalhouse.rentacarnow.entity.Feature;
 import com.digitalhouse.rentacarnow.entity.User;
 import com.digitalhouse.rentacarnow.exception.ConflictException;
@@ -48,12 +49,12 @@ public class CarServiceImpl implements CarService {
             return carRepository.findAll(pageable);
         }
         if (available == null) {
-            return carRepository.findByCategory(category, pageable);
+            return carRepository.findByCategory_Name(category, pageable);
         }
         if (category == null) {
             return carRepository.findByAvailable(available, pageable);
         }
-        return carRepository.findByCategoryAndAvailable(category, available, pageable);
+        return carRepository.findByCategory_NameAndAvailable(category, available, pageable);
     }
 
     @Override
@@ -84,12 +85,12 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay,
-                         Double pricePerHour, Boolean available, String category, Set<Long> featureIds,
-                         Long ownerId, User requester) {
+                         Double pricePerHour, Boolean available, Long categoryId,
+                         Set<Long> featureIds, Long ownerId, User requester) {
         if (carRepository.findByPlate(plate).isPresent()) {
             throw new ConflictException("Ya existe un auto con la patente: " + plate);
         }
-        validateCategory(category);
+        Category category = resolveCategory(categoryId);
         User owner = resolveOwner(ownerId, requester);
         Car car = new Car();
         car.setPlate(plate);
@@ -118,12 +119,12 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay,
-                         Double pricePerHour, Boolean available, String category, Set<Long> featureIds,
+                         Double pricePerHour, Boolean available, Long categoryId, Set<Long> featureIds,
                          User requester) {
         Car car = carRepository.findByPlate(plate)
                 .orElseThrow(() -> new RuntimeException("Car not found with plate: " + plate));
         assertCanManage(car, requester);
-        validateCategory(category);
+        Category category = resolveCategory(categoryId);
         car.setBrand(brand);
         car.setModel(model);
         car.setYear(year);
@@ -196,13 +197,12 @@ public class CarServiceImpl implements CarService {
         throw new AccessDeniedException("No tenés permiso para gestionar este auto.");
     }
 
-    private void validateCategory(String category) {
-        if (category == null || category.isBlank()) {
+    private Category resolveCategory(Long categoryId) {
+        if (categoryId == null) {
             throw new IllegalArgumentException("La categoría es obligatoria.");
         }
-        if (!categoryRepository.existsByName(category)) {
-            throw new ConflictException("La categoría '" + category + "' no existe. Creala primero en /admin/categories.");
-        }
+        return categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ConflictException("La categoría con id " + categoryId + " no existe. Creala primero en /admin/categories."));
     }
 
     private Set<Feature> resolveFeatures(Set<Long> featureIds) {

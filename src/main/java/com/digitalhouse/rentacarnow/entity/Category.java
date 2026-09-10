@@ -1,10 +1,14 @@
 package com.digitalhouse.rentacarnow.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -20,4 +24,8 @@ public class Category {
     private String name;
 
     private String description;
+
+    @OneToMany(mappedBy = "category")
+    @JsonIgnore
+    private List<Car> cars = new ArrayList<>();
 }

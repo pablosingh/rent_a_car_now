@@ -19,11 +19,11 @@ public interface CarService {
 
     Car findByPlate(String plate);
 
-    Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available, String category, Set<Long> featureIds, Long ownerId, User requester);
+    Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available, Long categoryId, Set<Long> featureIds, Long ownerId, User requester);
 
     void deleteCarById(Long id, User requester);
 
-    Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available, String category, Set<Long> featureIds, User requester);
+    Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay, Double pricePerHour, Boolean available, Long categoryId, Set<Long> featureIds, User requester);
 
     Car uploadImage(String plate, MultipartFile file, User requester);
 
