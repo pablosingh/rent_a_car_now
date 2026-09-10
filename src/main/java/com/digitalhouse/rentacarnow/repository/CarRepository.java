@@ -36,7 +36,7 @@ public interface CarRepository extends JpaRepository<Car, Long> {
             nativeQuery = true)
     List<Car> findRandom(@Param("limit") int limit, @Param("available") Boolean available, @Param("category") String category);
 
-    @Query(value = "SELECT DISTINCT c.* FROM car c JOIN car_features cf ON c.id = cf.car_id JOIN feature f ON cf.feature_id = f.id JOIN category cat ON c.category_id = cat.id WHERE f.name = :feature AND (:category IS NULL OR cat.name = :category) AND (:available IS NULL OR c.available = :available) ORDER BY random() LIMIT :limit",
+    @Query(value = "SELECT c.* FROM car c JOIN car_features cf ON c.id = cf.car_id JOIN feature f ON cf.feature_id = f.id JOIN category cat ON c.category_id = cat.id WHERE f.name = :feature AND (:category IS NULL OR cat.name = :category) AND (:available IS NULL OR c.available = :available) ORDER BY random() LIMIT :limit",
             nativeQuery = true)
     List<Car> findRandomByFeature(@Param("limit") int limit, @Param("available") Boolean available, @Param("category") String category, @Param("feature") String feature);
 
