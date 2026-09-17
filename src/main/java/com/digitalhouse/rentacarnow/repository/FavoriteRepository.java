@@ -18,4 +18,6 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
     long countByCar_Id(Long carId);
 
     void deleteByUser_IdAndCar_Id(Long userId, Long carId);
+
+    void deleteByCar_Id(Long carId);
 }

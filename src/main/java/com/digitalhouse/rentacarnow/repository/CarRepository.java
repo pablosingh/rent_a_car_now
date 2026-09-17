@@ -27,6 +27,10 @@ public interface CarRepository extends JpaRepository<Car, Long> {
 
     boolean existsByCategory_Name(String categoryName);
 
+    java.util.List<Car> findByCategory_Id(Long categoryId);
+
+    long countByCategory_Id(Long categoryId);
+
     @Query(value = "SELECT DISTINCT c.* FROM car c JOIN car_features cf ON c.id = cf.car_id JOIN feature f ON cf.feature_id = f.id WHERE f.name = :feature",
             countQuery = "SELECT COUNT(DISTINCT c.id) FROM car c JOIN car_features cf ON c.id = cf.car_id JOIN feature f ON cf.feature_id = f.id WHERE f.name = :feature",
             nativeQuery = true)
