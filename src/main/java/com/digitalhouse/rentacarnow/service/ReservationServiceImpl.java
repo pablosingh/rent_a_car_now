@@ -142,6 +142,9 @@ public class ReservationServiceImpl implements ReservationService {
         if (startAt.isBefore(Instant.now())) {
             throw new ConflictException("La reserva no puede iniciar en el pasado.");
         }
+        if (startAt.getEpochSecond() % 1800 != 0 || endAt.getEpochSecond() % 1800 != 0) {
+            throw new ConflictException("Las reservas son cada media hora (minutos 00 o 30).");
+        }
         Duration duration = Duration.between(startAt, endAt);
         if (duration.toMinutes() < 60) {
             throw new ConflictException("La duración mínima es de 1 hora.");
