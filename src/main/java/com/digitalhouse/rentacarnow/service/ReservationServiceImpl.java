@@ -3,16 +3,26 @@ package com.digitalhouse.rentacarnow.service;
 import com.digitalhouse.rentacarnow.entity.Car;
 import com.digitalhouse.rentacarnow.entity.Reservation;
 import com.digitalhouse.rentacarnow.entity.User;
+import com.digitalhouse.rentacarnow.exception.ConflictException;
 import com.digitalhouse.rentacarnow.repository.CarRepository;
 import com.digitalhouse.rentacarnow.repository.ReservationRepository;
 import com.digitalhouse.rentacarnow.repository.UserRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 @Service
 public class ReservationServiceImpl implements ReservationService {
+
+    private static final Duration BUFFER = Duration.ofHours(1);
+    private static final Duration DISCOUNT_THRESHOLD = Duration.ofHours(48);
+    private static final BigDecimal DISCOUNT_RATE = new BigDecimal("0.10");
 
     private final ReservationRepository reservationRepository;
     private final CarRepository carRepository;
@@ -56,17 +66,29 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
-    public Reservation createReservation(Integer durationInDays, Long car_id, Long user_id, User requester) {
+    @Transactional
+    public Reservation createReservation(Instant startAt, Instant endAt, Long car_id, Long user_id, User requester) {
         if ("USER".equals(requester.getRole()) && !requester.getId().equals(user_id)) {
             throw new AccessDeniedException("Un usuario solo puede reservar para sí mismo.");
         }
+        validateDates(startAt, endAt);
         Car car = carRepository.findById(car_id)
                 .orElseThrow(() -> new RuntimeException("Car not found with id: " + car_id));
+        if (Boolean.FALSE.equals(car.getAvailable())) {
+            throw new ConflictException("El auto no está disponible para reservas.");
+        }
         User user = userRepository.findById(user_id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + user_id));
 
+        checkOverlap(car_id, startAt, endAt, null);
+
+        BigDecimal totalPrice = calculateTotalPrice(car.getPricePerHour(), startAt, endAt);
+
         Reservation reservation = new Reservation();
-        reservation.setDurationInDays(durationInDays);
+        reservation.setStartAt(startAt);
+        reservation.setEndAt(endAt);
+        reservation.setTotalPrice(totalPrice);
+        reservation.setCreatedAt(Instant.now());
         reservation.setCar(car);
         reservation.setUser(user);
         return reservationRepository.save(reservation);
@@ -81,22 +103,74 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
-    public Reservation updateReservation(Long id, Integer durationInDays, Long car_id, Long user_id, User requester) {
+    @Transactional
+    public Reservation updateReservation(Long id, Instant startAt, Instant endAt, Long car_id, Long user_id, User requester) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));
         assertCanManage(reservation, requester);
         if ("USER".equals(requester.getRole()) && !requester.getId().equals(user_id)) {
             throw new AccessDeniedException("Un usuario solo puede reservar para sí mismo.");
         }
+        validateDates(startAt, endAt);
         Car car = carRepository.findById(car_id)
                 .orElseThrow(() -> new RuntimeException("Car not found with id: " + car_id));
+        if (Boolean.FALSE.equals(car.getAvailable())) {
+            throw new ConflictException("El auto no está disponible para reservas.");
+        }
         User user = userRepository.findById(user_id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + user_id));
 
-        reservation.setDurationInDays(durationInDays);
+        checkOverlap(car_id, startAt, endAt, id);
+
+        BigDecimal totalPrice = calculateTotalPrice(car.getPricePerHour(), startAt, endAt);
+
+        reservation.setStartAt(startAt);
+        reservation.setEndAt(endAt);
+        reservation.setTotalPrice(totalPrice);
         reservation.setCar(car);
         reservation.setUser(user);
         return reservationRepository.save(reservation);
+    }
+
+    private void validateDates(Instant startAt, Instant endAt) {
+        if (startAt == null || endAt == null) {
+            throw new ConflictException("startAt y endAt son obligatorios.");
+        }
+        if (!endAt.isAfter(startAt)) {
+            throw new ConflictException("endAt debe ser posterior a startAt.");
+        }
+        if (startAt.isBefore(Instant.now())) {
+            throw new ConflictException("La reserva no puede iniciar en el pasado.");
+        }
+        Duration duration = Duration.between(startAt, endAt);
+        if (duration.toMinutes() < 60) {
+            throw new ConflictException("La duración mínima es de 1 hora.");
+        }
+    }
+
+    private void checkOverlap(Long carId, Instant startAt, Instant endAt, Long excludeId) {
+        Instant effectiveStart = startAt.minus(BUFFER);
+        Instant effectiveEnd = endAt.plus(BUFFER);
+        boolean overlap = reservationRepository.existsOverlapWithBuffer(carId, effectiveStart, effectiveEnd, excludeId);
+        if (overlap) {
+            throw new ConflictException("El auto ya tiene una reserva en ese rango (incluye 1h de limpieza).");
+        }
+    }
+
+    private BigDecimal calculateTotalPrice(Double pricePerHour, Instant startAt, Instant endAt) {
+        if (pricePerHour == null) {
+            throw new ConflictException("El auto no tiene tarifa por hora configurada.");
+        }
+        long minutes = Duration.between(startAt, endAt).toMinutes();
+        long hours = (minutes + 59) / 60;
+        if (hours <= 0) hours = 1;
+        BigDecimal price = BigDecimal.valueOf(pricePerHour).multiply(BigDecimal.valueOf(hours));
+        Duration duration = Duration.between(startAt, endAt);
+        if (duration.compareTo(DISCOUNT_THRESHOLD) > 0) {
+            BigDecimal discount = price.multiply(DISCOUNT_RATE);
+            price = price.subtract(discount);
+        }
+        return price.setScale(2, RoundingMode.HALF_UP);
     }
 
     private void assertCanManage(Reservation reservation, User requester) {

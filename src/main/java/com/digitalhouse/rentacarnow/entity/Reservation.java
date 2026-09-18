@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+
 @Entity
 @Getter
 @Setter
@@ -17,8 +20,17 @@ public class Reservation {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false)
-  private Integer durationInDays;
+  @Column(nullable = false, columnDefinition = "timestamptz")
+  private Instant startAt;
+
+  @Column(nullable = false, columnDefinition = "timestamptz")
+  private Instant endAt;
+
+  @Column(nullable = false, precision = 10, scale = 2)
+  private BigDecimal totalPrice;
+
+  @Column(nullable = false, columnDefinition = "timestamptz")
+  private Instant createdAt = Instant.now();
 
   @ManyToOne
   @JoinColumn(name = "car_id")

@@ -5,6 +5,7 @@ import com.digitalhouse.rentacarnow.dto.ReservationRequest;
 import com.digitalhouse.rentacarnow.entity.Reservation;
 import com.digitalhouse.rentacarnow.security.CurrentUserService;
 import com.digitalhouse.rentacarnow.service.ReservationService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,9 +37,9 @@ public class ReservationController {
     }
 
     @PostMapping
-    public ApiResponse<Reservation> createReservation(@RequestBody ReservationRequest request) {
+    public ApiResponse<Reservation> createReservation(@Valid @RequestBody ReservationRequest request) {
         return ApiResponse.success(reservationService.createReservation(
-                request.durationInDays(), request.carId(), request.userId(), currentUserService.currentUser()));
+                request.startAt(), request.endAt(), request.carId(), request.userId(), currentUserService.currentUser()));
     }
 
     @DeleteMapping("/{id}")
@@ -49,8 +50,8 @@ public class ReservationController {
 
     @PutMapping("/{id}")
     public ApiResponse<Reservation> updateReservation(@PathVariable Long id,
-                                                      @RequestBody ReservationRequest request) {
+                                                      @Valid @RequestBody ReservationRequest request) {
         return ApiResponse.success(reservationService.updateReservation(
-                id, request.durationInDays(), request.carId(), request.userId(), currentUserService.currentUser()));
+                id, request.startAt(), request.endAt(), request.carId(), request.userId(), currentUserService.currentUser()));
     }
 }
