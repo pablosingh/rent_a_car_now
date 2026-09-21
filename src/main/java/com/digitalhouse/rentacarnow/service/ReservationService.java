@@ -18,4 +18,12 @@ public interface ReservationService {
   Reservation updateReservation(Long id, Instant startAt, Instant endAt, Long car_id, Long user_id, User requester);
 
   void deleteReservationById(Long id, User requester);
+
+  Reservation dispatchReservation(Long id, User requester);
+
+  Reservation completeReservation(Long id, User requester);
+
+  Reservation cancelReservation(Long id, User requester);
+
+  Reservation revertReservation(Long id, User requester);
 }

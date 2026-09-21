@@ -54,4 +54,24 @@ public class ReservationController {
         return ApiResponse.success(reservationService.updateReservation(
                 id, request.startAt(), request.endAt(), request.carId(), request.userId(), currentUserService.currentUser()));
     }
+
+    @PostMapping("/{id}/dispatch")
+    public ApiResponse<Reservation> dispatch(@PathVariable Long id) {
+        return ApiResponse.success(reservationService.dispatchReservation(id, currentUserService.currentUser()));
+    }
+
+    @PostMapping("/{id}/complete")
+    public ApiResponse<Reservation> complete(@PathVariable Long id) {
+        return ApiResponse.success(reservationService.completeReservation(id, currentUserService.currentUser()));
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ApiResponse<Reservation> cancel(@PathVariable Long id) {
+        return ApiResponse.success(reservationService.cancelReservation(id, currentUserService.currentUser()));
+    }
+
+    @PostMapping("/{id}/revert")
+    public ApiResponse<Reservation> revert(@PathVariable Long id) {
+        return ApiResponse.success(reservationService.revertReservation(id, currentUserService.currentUser()));
+    }
 }

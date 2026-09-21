@@ -2,6 +2,7 @@ package com.digitalhouse.rentacarnow.service;
 
 import com.digitalhouse.rentacarnow.entity.Car;
 import com.digitalhouse.rentacarnow.entity.Reservation;
+import com.digitalhouse.rentacarnow.entity.ReservationStatus;
 import com.digitalhouse.rentacarnow.entity.User;
 import com.digitalhouse.rentacarnow.exception.ConflictException;
 import com.digitalhouse.rentacarnow.repository.CarRepository;
@@ -100,6 +101,90 @@ public class ReservationServiceImpl implements ReservationService {
                 .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));
         assertCanManage(reservation, requester);
         reservationRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public Reservation dispatchReservation(Long id, User requester) {
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));
+        assertCanManage(reservation, requester);
+        assertStaff(requester);
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
+            throw new ConflictException("Solo reservas PENDING pueden despacharse. Estado actual: " + reservation.getStatus());
+        }
+        reservation.setStatus(ReservationStatus.DISPATCHED);
+        reservation.setDispatchedAt(Instant.now());
+        reservation.setDispatchedBy(requester);
+        return reservationRepository.save(reservation);
+    }
+
+    @Override
+    @Transactional
+    public Reservation completeReservation(Long id, User requester) {
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));
+        assertCanManage(reservation, requester);
+        assertStaff(requester);
+        if (reservation.getStatus() != ReservationStatus.DISPATCHED) {
+            throw new ConflictException("Solo reservas DISPATCHED pueden completarse. Estado actual: " + reservation.getStatus());
+        }
+        reservation.setStatus(ReservationStatus.COMPLETED);
+        reservation.setCompletedAt(Instant.now());
+        reservation.setCompletedBy(requester);
+        return reservationRepository.save(reservation);
+    }
+
+    @Override
+    @Transactional
+    public Reservation cancelReservation(Long id, User requester) {
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));
+        assertCanManage(reservation, requester);
+        if (reservation.getStatus() == ReservationStatus.COMPLETED || reservation.getStatus() == ReservationStatus.CANCELLED) {
+            throw new ConflictException("No se puede cancelar una reserva " + reservation.getStatus());
+        }
+        if ("USER".equals(requester.getRole()) && reservation.getStatus() != ReservationStatus.PENDING) {
+            throw new ConflictException("Como USER solo podés cancelar reservas PENDING. Estado actual: " + reservation.getStatus());
+        }
+        reservation.setStatus(ReservationStatus.CANCELLED);
+        reservation.setCancelledAt(Instant.now());
+        return reservationRepository.save(reservation);
+    }
+
+    @Override
+    @Transactional
+    public Reservation revertReservation(Long id, User requester) {
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));
+        assertCanManage(reservation, requester);
+        assertStaff(requester);
+        if (reservation.getStatus() == ReservationStatus.DISPATCHED) {
+            reservation.setStatus(ReservationStatus.PENDING);
+            reservation.setDispatchedAt(null);
+            reservation.setDispatchedBy(null);
+            return reservationRepository.save(reservation);
+        }
+        if (reservation.getStatus() == ReservationStatus.COMPLETED) {
+            reservation.setStatus(ReservationStatus.DISPATCHED);
+            reservation.setCompletedAt(null);
+            reservation.setCompletedBy(null);
+            return reservationRepository.save(reservation);
+        }
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+            reservation.setStatus(ReservationStatus.PENDING);
+            reservation.setCancelledAt(null);
+            return reservationRepository.save(reservation);
+        }
+        throw new ConflictException("Solo reservas DISPATCHED/COMPLETED/CANCELLED pueden revertirse. Estado actual: " + reservation.getStatus());
+    }
+
+    private void assertStaff(User requester) {
+        String role = requester.getRole();
+        if ("OWNER".equals(role) || "EMPLOYEE".equals(role) || "ADMIN".equals(role)) {
+            return;
+        }
+        throw new AccessDeniedException("Solo OWNER, EMPLOYEE o ADMIN pueden realizar esta acción.");
     }
 
     @Override

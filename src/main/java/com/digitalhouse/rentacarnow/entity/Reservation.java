@@ -32,6 +32,27 @@ public class Reservation {
   @Column(nullable = false, columnDefinition = "timestamptz")
   private Instant createdAt = Instant.now();
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private ReservationStatus status = ReservationStatus.PENDING;
+
+  @Column(columnDefinition = "timestamptz")
+  private Instant dispatchedAt;
+
+  @ManyToOne
+  @JoinColumn(name = "dispatched_by_id")
+  private User dispatchedBy;
+
+  @Column(columnDefinition = "timestamptz")
+  private Instant completedAt;
+
+  @ManyToOne
+  @JoinColumn(name = "completed_by_id")
+  private User completedBy;
+
+  @Column(columnDefinition = "timestamptz")
+  private Instant cancelledAt;
+
   @ManyToOne
   @JoinColumn(name = "car_id")
   private Car car;
