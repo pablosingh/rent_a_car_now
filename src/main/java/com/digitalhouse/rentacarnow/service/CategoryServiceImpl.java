@@ -6,6 +6,7 @@ import com.digitalhouse.rentacarnow.exception.ConflictException;
 import com.digitalhouse.rentacarnow.repository.CarRepository;
 import com.digitalhouse.rentacarnow.repository.CategoryRepository;
 import com.digitalhouse.rentacarnow.repository.FavoriteRepository;
+import com.digitalhouse.rentacarnow.repository.RatingRepository;
 import com.digitalhouse.rentacarnow.repository.ReservationRepository;
 import com.digitalhouse.rentacarnow.service.FileStorageService;
 import org.springframework.stereotype.Service;
@@ -20,15 +21,18 @@ public class CategoryServiceImpl implements CategoryService {
     private final CarRepository carRepository;
     private final FavoriteRepository favoriteRepository;
     private final ReservationRepository reservationRepository;
+    private final RatingRepository ratingRepository;
     private final FileStorageService fileStorageService;
 
     public CategoryServiceImpl(CategoryRepository categoryRepository, CarRepository carRepository,
                                FavoriteRepository favoriteRepository, ReservationRepository reservationRepository,
+                               RatingRepository ratingRepository,
                                FileStorageService fileStorageService) {
         this.categoryRepository = categoryRepository;
         this.carRepository = carRepository;
         this.favoriteRepository = favoriteRepository;
         this.reservationRepository = reservationRepository;
+        this.ratingRepository = ratingRepository;
         this.fileStorageService = fileStorageService;
     }
 
@@ -67,6 +71,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .orElseThrow(() -> new RuntimeException("Category not found with id: " + id));
         List<Car> cars = carRepository.findByCategory_Id(id);
         for (Car car : cars) {
+            ratingRepository.deleteByCar_Id(car.getId());
             favoriteRepository.deleteByCar_Id(car.getId());
             reservationRepository.deleteByCar_Id(car.getId());
             for (String path : car.getImagePaths()) {

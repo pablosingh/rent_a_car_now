@@ -8,6 +8,7 @@ import com.digitalhouse.rentacarnow.exception.ConflictException;
 import com.digitalhouse.rentacarnow.repository.CarRepository;
 import com.digitalhouse.rentacarnow.repository.CategoryRepository;
 import com.digitalhouse.rentacarnow.repository.FeatureRepository;
+import com.digitalhouse.rentacarnow.repository.RatingRepository;
 import com.digitalhouse.rentacarnow.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,14 +27,16 @@ public class CarServiceImpl implements CarService {
     private final UserRepository userRepository;
     private final FeatureRepository featureRepository;
     private final CategoryRepository categoryRepository;
+    private final RatingRepository ratingRepository;
     private final FileStorageService fileStorageService;
 
     public CarServiceImpl(CarRepository carRepository, UserRepository userRepository,
-                          FeatureRepository featureRepository, CategoryRepository categoryRepository, FileStorageService fileStorageService) {
+                           FeatureRepository featureRepository, CategoryRepository categoryRepository, RatingRepository ratingRepository, FileStorageService fileStorageService) {
         this.carRepository = carRepository;
         this.userRepository = userRepository;
         this.featureRepository = featureRepository;
         this.categoryRepository = categoryRepository;
+        this.ratingRepository = ratingRepository;
         this.fileStorageService = fileStorageService;
     }
 
@@ -111,6 +114,7 @@ public class CarServiceImpl implements CarService {
         Car car = carRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Car not found with id: " + id));
         assertCanManage(car, requester);
+        ratingRepository.deleteByCar_Id(id);
         for (String path : car.getImagePaths()) {
             fileStorageService.deleteFile(path);
         }
