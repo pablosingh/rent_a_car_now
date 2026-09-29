@@ -3,13 +3,18 @@ package com.digitalhouse.rentacarnow.service;
 import java.time.Instant;
 import java.util.List;
 import com.digitalhouse.rentacarnow.entity.Reservation;
+import com.digitalhouse.rentacarnow.entity.ReservationStatus;
 import com.digitalhouse.rentacarnow.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface ReservationService {
 
   List<Reservation> findAll(User requester);
 
   List<Reservation> findMy(User requester);
+
+  Page<Reservation> findHistory(Long userId, ReservationStatus status, Instant from, Instant to, Pageable pageable, User requester);
 
   Reservation findById(Long id, User requester);
 

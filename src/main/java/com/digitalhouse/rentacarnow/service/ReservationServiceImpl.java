@@ -8,6 +8,16 @@ import com.digitalhouse.rentacarnow.exception.ConflictException;
 import com.digitalhouse.rentacarnow.repository.CarRepository;
 import com.digitalhouse.rentacarnow.repository.ReservationRepository;
 import com.digitalhouse.rentacarnow.repository.UserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +26,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -28,11 +39,13 @@ public class ReservationServiceImpl implements ReservationService {
     private final ReservationRepository reservationRepository;
     private final CarRepository carRepository;
     private final UserRepository userRepository;
+    private final EntityManager entityManager;
 
-    public ReservationServiceImpl(ReservationRepository reservationRepository, CarRepository carRepository, UserRepository userRepository) {
+    public ReservationServiceImpl(ReservationRepository reservationRepository, CarRepository carRepository, UserRepository userRepository, EntityManager entityManager) {
         this.reservationRepository = reservationRepository;
         this.carRepository = carRepository;
         this.userRepository = userRepository;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -56,6 +69,64 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     public List<Reservation> findMy(User requester) {
         return reservationRepository.findByUserId(requester.getId());
+    }
+
+    @Override
+    public Page<Reservation> findHistory(Long userId, ReservationStatus status, Instant from, Instant to, Pageable pageable, User requester) {
+        Long targetUserId = userId != null ? userId : requester.getId();
+        if (!targetUserId.equals(requester.getId()) && !"ADMIN".equals(requester.getRole())) {
+            throw new AccessDeniedException("Solo ADMIN puede ver el historial de otro usuario.");
+        }
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new ConflictException("from debe ser anterior a to.");
+        }
+        if (!userRepository.existsById(targetUserId)) {
+            throw new RuntimeException("User not found with id: " + targetUserId);
+        }
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+
+        CriteriaQuery<Reservation> cq = cb.createQuery(Reservation.class);
+        Root<Reservation> root = cq.from(Reservation.class);
+        List<Predicate> predicates = new ArrayList<>();
+        predicates.add(cb.equal(root.get("user").get("id"), targetUserId));
+        if (status != null) predicates.add(cb.equal(root.get("status"), status));
+        if (from != null) predicates.add(cb.greaterThanOrEqualTo(root.get("startAt"), from));
+        if (to != null) predicates.add(cb.lessThanOrEqualTo(root.get("startAt"), to));
+        cq.where(predicates.toArray(new Predicate[0]));
+
+        if (pageable.getSort().isSorted()) {
+            List<jakarta.persistence.criteria.Order> jakartaOrders = new ArrayList<>();
+            for (Sort.Order order : pageable.getSort()) {
+                String prop = order.getProperty();
+                if (order.isAscending()) {
+                    jakartaOrders.add(cb.asc(root.get(prop)));
+                } else {
+                    jakartaOrders.add(cb.desc(root.get(prop)));
+                }
+            }
+            cq.orderBy(jakartaOrders);
+        } else {
+            cq.orderBy(cb.desc(root.get("startAt")));
+        }
+
+        TypedQuery<Reservation> query = entityManager.createQuery(cq);
+        query.setFirstResult((int) pageable.getOffset());
+        query.setMaxResults(pageable.getPageSize());
+        List<Reservation> content = query.getResultList();
+
+        CriteriaQuery<Long> countCq = cb.createQuery(Long.class);
+        Root<Reservation> countRoot = countCq.from(Reservation.class);
+        countCq.select(cb.count(countRoot));
+        List<Predicate> countPredicates = new ArrayList<>();
+        countPredicates.add(cb.equal(countRoot.get("user").get("id"), targetUserId));
+        if (status != null) countPredicates.add(cb.equal(countRoot.get("status"), status));
+        if (from != null) countPredicates.add(cb.greaterThanOrEqualTo(countRoot.get("startAt"), from));
+        if (to != null) countPredicates.add(cb.lessThanOrEqualTo(countRoot.get("startAt"), to));
+        countCq.where(countPredicates.toArray(new Predicate[0]));
+        Long total = entityManager.createQuery(countCq).getSingleResult();
+
+        return new PageImpl<>(content, pageable, total);
     }
 
     @Override

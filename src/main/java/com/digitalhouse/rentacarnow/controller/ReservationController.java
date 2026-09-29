@@ -1,13 +1,21 @@
 package com.digitalhouse.rentacarnow.controller;
 
 import com.digitalhouse.rentacarnow.dto.ApiResponse;
+import com.digitalhouse.rentacarnow.dto.PageResponse;
 import com.digitalhouse.rentacarnow.dto.ReservationRequest;
 import com.digitalhouse.rentacarnow.entity.Reservation;
+import com.digitalhouse.rentacarnow.entity.ReservationStatus;
 import com.digitalhouse.rentacarnow.security.CurrentUserService;
 import com.digitalhouse.rentacarnow.service.ReservationService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -29,6 +37,17 @@ public class ReservationController {
     @GetMapping("/my")
     public ApiResponse<List<Reservation>> findMy() {
         return ApiResponse.success(reservationService.findMy(currentUserService.currentUser()));
+    }
+
+    @GetMapping("/history")
+    public ApiResponse<PageResponse<Reservation>> history(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) ReservationStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @PageableDefault(size = 10, sort = "startAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<Reservation> page = reservationService.findHistory(userId, status, from, to, pageable, currentUserService.currentUser());
+        return ApiResponse.success(PageResponse.from(page));
     }
 
     @GetMapping("/{id}")
