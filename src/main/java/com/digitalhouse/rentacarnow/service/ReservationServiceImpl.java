@@ -130,6 +130,25 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
+    public List<com.digitalhouse.rentacarnow.dto.AvailabilitySlot> findAvailability(Long carId, Instant from, Instant to) {
+        if (!carRepository.existsById(carId)) {
+            throw new RuntimeException("Car not found with id: " + carId);
+        }
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Reservation> cq = cb.createQuery(Reservation.class);
+        Root<Reservation> root = cq.from(Reservation.class);
+        List<Predicate> predicates = new ArrayList<>();
+        predicates.add(cb.equal(root.get("car").get("id"), carId));
+        predicates.add(cb.notEqual(root.get("status"), ReservationStatus.CANCELLED));
+        if (from != null) predicates.add(cb.greaterThan(root.get("endAt"), from));
+        if (to != null) predicates.add(cb.lessThan(root.get("startAt"), to));
+        cq.where(predicates.toArray(new Predicate[0]));
+        cq.orderBy(cb.asc(root.get("startAt")));
+        List<Reservation> list = entityManager.createQuery(cq).getResultList();
+        return list.stream().map(com.digitalhouse.rentacarnow.dto.AvailabilitySlot::from).toList();
+    }
+
+    @Override
     public Reservation findById(Long id, User requester) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));

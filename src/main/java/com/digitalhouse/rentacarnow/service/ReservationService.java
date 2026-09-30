@@ -16,6 +16,8 @@ public interface ReservationService {
 
   Page<Reservation> findHistory(Long userId, ReservationStatus status, Instant from, Instant to, Pageable pageable, User requester);
 
+  List<com.digitalhouse.rentacarnow.dto.AvailabilitySlot> findAvailability(Long carId, Instant from, Instant to);
+
   Reservation findById(Long id, User requester);
 
   Reservation createReservation(Instant startAt, Instant endAt, Long car_id, Long user_id, User requester);

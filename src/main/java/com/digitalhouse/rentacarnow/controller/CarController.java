@@ -1,17 +1,21 @@
 package com.digitalhouse.rentacarnow.controller;
 
 import com.digitalhouse.rentacarnow.dto.ApiResponse;
+import com.digitalhouse.rentacarnow.dto.AvailabilitySlot;
 import com.digitalhouse.rentacarnow.dto.PageResponse;
 import com.digitalhouse.rentacarnow.entity.Car;
 import com.digitalhouse.rentacarnow.security.CurrentUserService;
 import com.digitalhouse.rentacarnow.service.CarService;
+import com.digitalhouse.rentacarnow.service.ReservationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.validation.Valid;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -19,10 +23,12 @@ import java.util.Set;
 @RequestMapping("/api/cars")
 public class CarController {
     private final CarService carService;
+    private final ReservationService reservationService;
     private final CurrentUserService currentUserService;
 
-    public CarController(CarService carService, CurrentUserService currentUserService) {
+    public CarController(CarService carService, ReservationService reservationService, CurrentUserService currentUserService) {
         this.carService = carService;
+        this.reservationService = reservationService;
         this.currentUserService = currentUserService;
     }
 
@@ -53,6 +59,14 @@ public class CarController {
     @GetMapping("/{plate}")
     public ApiResponse<Car> findByPlate(@PathVariable String plate) {
         return ApiResponse.success(carService.findByPlate(plate));
+    }
+
+    @GetMapping("/{carId}/availability")
+    public ApiResponse<List<AvailabilitySlot>> availability(
+            @PathVariable Long carId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
+        return ApiResponse.success(reservationService.findAvailability(carId, from, to));
     }
 
     @PostMapping
