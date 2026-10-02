@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -55,6 +56,7 @@ public class Car {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
+    @JsonIgnoreProperties({"phone", "password"})
     private User owner;
 
     @ManyToMany

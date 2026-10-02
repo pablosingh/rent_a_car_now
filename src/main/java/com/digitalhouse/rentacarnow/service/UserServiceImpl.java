@@ -65,7 +65,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User createUser(String name, String lastName, String email, String password, String role, MultipartFile file) {
+    public User createUser(String name, String lastName, String email, String password, String role, String phone, MultipartFile file) {
         if (userRepository.existsByEmail(email)) {
             throw new ConflictException("Ya existe un usuario con ese email.");
         }
@@ -80,6 +80,7 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(password));
         user.setRole(resolvedRole);
         user.setVerified("USER".equals(resolvedRole));
+        user.setPhone(resolvePhone(phone));
         if (file != null && !file.isEmpty()) {
             user.setPhotoPath(fileStorageService.saveFile(file));
         }
@@ -87,7 +88,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User createEmployee(String name, String lastName, String email, String password, MultipartFile file, User requester) {
+    public User createEmployee(String name, String lastName, String email, String password, String phone, MultipartFile file, User requester) {
         if ("OWNER".equals(requester.getRole()) && !Boolean.TRUE.equals(requester.getVerified())) {
             throw new AccessDeniedException("Tu cuenta de OWNER debe estar verificada para crear empleados.");
         }
@@ -105,6 +106,7 @@ public class UserServiceImpl implements UserService {
         user.setRole("EMPLOYEE");
         user.setVerified(true);
         user.setOwner("OWNER".equals(requester.getRole()) ? requester : null);
+        user.setPhone(resolvePhone(phone));
         if (file != null && !file.isEmpty()) {
             user.setPhotoPath(fileStorageService.saveFile(file));
         }
@@ -122,12 +124,14 @@ public class UserServiceImpl implements UserService {
     public User updateUser(User newUser, User requester) {
         User user = userRepository.findById(newUser.getId())
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + newUser.getId()));
-        if (!"ADMIN".equals(requester.getRole()) && !canManage(requester, user)) {
+        boolean self = requester.getId() != null && requester.getId().equals(user.getId());
+        if (!"ADMIN".equals(requester.getRole()) && !self && !canManage(requester, user)) {
             throw new AccessDeniedException("No tenés permiso para modificar este usuario.");
         }
         if (newUser.getName() != null) user.setName(newUser.getName());
         if (newUser.getLastName() != null) user.setLastName(newUser.getLastName());
-        if (newUser.getEmail() != null) user.setEmail(newUser.getEmail());
+        if (newUser.getEmail() != null && ("ADMIN".equals(requester.getRole()) || self)) user.setEmail(newUser.getEmail());
+        if (newUser.getPhone() != null) user.setPhone(resolvePhone(newUser.getPhone()));
         if (newUser.getPassword() != null && !newUser.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(newUser.getPassword()));
         }
@@ -169,5 +173,14 @@ public class UserServiceImpl implements UserService {
                 && "EMPLOYEE".equals(target.getRole())
                 && target.getOwner() != null
                 && target.getOwner().getId().equals(requester.getId());
+    }
+
+    private String resolvePhone(String phone) {
+        if (phone == null || phone.isBlank()) return null;
+        try {
+            return PhoneUtils.normalize(phone);
+        } catch (IllegalArgumentException e) {
+            throw new ConflictException(e.getMessage());
+        }
     }
 }

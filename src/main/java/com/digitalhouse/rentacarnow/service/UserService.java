@@ -15,9 +15,9 @@ public interface UserService {
 
     void deleteById(Integer id, User requester);
 
-    User createUser(String name, String lastName, String email, String password, String role, MultipartFile file);
+    User createUser(String name, String lastName, String email, String password, String role, String phone, MultipartFile file);
 
-    User createEmployee(String name, String lastName, String email, String password, MultipartFile file, User requester);
+    User createEmployee(String name, String lastName, String email, String password, String phone, MultipartFile file, User requester);
 
     User verifyUser(Long id);
 

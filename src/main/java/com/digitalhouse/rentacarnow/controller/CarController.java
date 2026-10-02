@@ -2,6 +2,7 @@ package com.digitalhouse.rentacarnow.controller;
 
 import com.digitalhouse.rentacarnow.dto.ApiResponse;
 import com.digitalhouse.rentacarnow.dto.AvailabilitySlot;
+import com.digitalhouse.rentacarnow.dto.OwnerContactResponse;
 import com.digitalhouse.rentacarnow.dto.PageResponse;
 import com.digitalhouse.rentacarnow.entity.Car;
 import com.digitalhouse.rentacarnow.security.CurrentUserService;
@@ -67,6 +68,11 @@ public class CarController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
         return ApiResponse.success(reservationService.findAvailability(carId, from, to));
+    }
+
+    @GetMapping("/{carId}/contact")
+    public ApiResponse<OwnerContactResponse> contact(@PathVariable Long carId) {
+        return ApiResponse.success(reservationService.getContactByCar(carId, currentUserService.currentUser()));
     }
 
     @PostMapping

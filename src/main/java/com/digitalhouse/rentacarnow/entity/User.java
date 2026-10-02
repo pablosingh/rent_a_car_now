@@ -45,6 +45,9 @@ public class User {
 
     private String photoPath;
 
+    @Column(length = 20)
+    private String phone;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Reservation> reservations;

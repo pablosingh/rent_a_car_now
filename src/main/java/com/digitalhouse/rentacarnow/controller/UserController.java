@@ -61,8 +61,9 @@ public class UserController {
                                         @RequestParam String email,
                                         @RequestParam String password,
                                         @RequestParam(value = "role", required = false) String role,
+                                        @RequestParam(value = "phone", required = false) String phone,
                                         @RequestParam(value = "file", required = false) MultipartFile file) {
-        User created = userService.createUser(name, lastName, email, password, role, file);
+        User created = userService.createUser(name, lastName, email, password, role, phone, file);
         created.setPassword(null);
         return ApiResponse.success(created);
     }
@@ -72,8 +73,9 @@ public class UserController {
                                             @RequestParam String lastName,
                                             @RequestParam String email,
                                             @RequestParam String password,
+                                            @RequestParam(value = "phone", required = false) String phone,
                                             @RequestParam(value = "file", required = false) MultipartFile file) {
-        User created = userService.createEmployee(name, lastName, email, password, file, currentUserService.currentUser());
+        User created = userService.createEmployee(name, lastName, email, password, phone, file, currentUserService.currentUser());
         created.setPassword(null);
         return ApiResponse.success(created);
     }

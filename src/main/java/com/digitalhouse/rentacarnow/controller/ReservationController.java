@@ -1,6 +1,7 @@
 package com.digitalhouse.rentacarnow.controller;
 
 import com.digitalhouse.rentacarnow.dto.ApiResponse;
+import com.digitalhouse.rentacarnow.dto.OwnerContactResponse;
 import com.digitalhouse.rentacarnow.dto.PageResponse;
 import com.digitalhouse.rentacarnow.dto.ReservationRequest;
 import com.digitalhouse.rentacarnow.entity.Reservation;
@@ -53,6 +54,11 @@ public class ReservationController {
     @GetMapping("/{id}")
     public ApiResponse<Reservation> findById(@PathVariable Long id) {
         return ApiResponse.success(reservationService.findById(id, currentUserService.currentUser()));
+    }
+
+    @GetMapping("/{id}/contact")
+    public ApiResponse<OwnerContactResponse> contact(@PathVariable Long id) {
+        return ApiResponse.success(reservationService.getContactByReservation(id, currentUserService.currentUser()));
     }
 
     @PostMapping

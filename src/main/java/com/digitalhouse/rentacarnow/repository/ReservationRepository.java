@@ -14,6 +14,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>{
 
     List<Reservation> findByUserId(Long userId);
 
+    boolean existsByUserIdAndCarId(Long userId, Long carId);
+
     List<Reservation> findByCar_Owner_Id(Long ownerId);
 
     void deleteByCar_Id(Long carId);

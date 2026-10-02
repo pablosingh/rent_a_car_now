@@ -1,5 +1,6 @@
 package com.digitalhouse.rentacarnow.service;
 
+import com.digitalhouse.rentacarnow.dto.OwnerContactResponse;
 import java.time.Instant;
 import java.util.List;
 import com.digitalhouse.rentacarnow.entity.Reservation;
@@ -33,4 +34,8 @@ public interface ReservationService {
   Reservation cancelReservation(Long id, User requester);
 
   Reservation revertReservation(Long id, User requester);
+
+  OwnerContactResponse getContactByCar(Long carId, User requester);
+
+  OwnerContactResponse getContactByReservation(Long reservationId, User requester);
 }

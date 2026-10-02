@@ -351,8 +351,62 @@ public class ReservationServiceImpl implements ReservationService {
         return price.setScale(2, RoundingMode.HALF_UP);
     }
 
-    private void assertCanManage(Reservation reservation, User requester) {
-        String role = requester.getRole();
+    @Override
+    public com.digitalhouse.rentacarnow.dto.OwnerContactResponse getContactByCar(Long carId, User requester) {
+        Car car = carRepository.findById(carId)
+                .orElseThrow(() -> new RuntimeException("Car not found with id: " + carId));
+        assertCanContact(car, requester);
+        String text = "Hola, te contacto por tu auto " + car.getBrand() + " " + car.getModel()
+                + " (" + car.getPlate() + ") publicado en RentaCarNow.";
+        return buildContact(car, text);
+    }
+
+    @Override
+    public com.digitalhouse.rentacarnow.dto.OwnerContactResponse getContactByReservation(Long reservationId, User requester) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + reservationId));
+        boolean isOwner = reservation.getUser() != null && reservation.getUser().getId().equals(requester.getId());
+        boolean isAdmin = "ADMIN".equals(requester.getRole());
+        boolean isStaff = isStaffOfCar(reservation.getCar(), requester);
+        if (!isOwner && !isAdmin && !isStaff) {
+            throw new AccessDeniedException("Solo el dueño de la reserva puede contactar al propietario.");
+        }
+        Car car = reservation.getCar();
+        String text = "Hola, te contacto por mi reserva #" + reservation.getId() + " del "
+                + car.getBrand() + " " + car.getModel() + " (" + car.getPlate() + ").";
+        return buildContact(car, text);
+    }
+
+    private com.digitalhouse.rentacarnow.dto.OwnerContactResponse buildContact(Car car, String text) {
+        User owner = car.getOwner();
+        if (owner == null || owner.getPhone() == null || owner.getPhone().isBlank()) {
+            throw new RuntimeException("El dueño aún no registró WhatsApp.");
+        }
+        String ownerName = (owner.getName() + " " + owner.getLastName()).trim();
+        return new com.digitalhouse.rentacarnow.dto.OwnerContactResponse(
+                ownerName, owner.getPhone(), PhoneUtils.toWaLink(owner.getPhone(), text));
+    }
+
+    private void assertCanContact(Car car, User requester) {
+        if ("ADMIN".equals(requester.getRole()) || isStaffOfCar(car, requester)) {
+            return;
+        }
+        boolean hasReservation = reservationRepository.existsByUserIdAndCarId(requester.getId(), car.getId());
+        if (!hasReservation) {
+            throw new AccessDeniedException("Solo usuarios con reserva de este auto pueden contactar al dueño.");
+        }
+    }
+
+    private boolean isStaffOfCar(Car car, User requester) {
+        if (car == null || car.getOwner() == null) return false;
+        Long ownerId = car.getOwner().getId();
+        if ("OWNER".equals(requester.getRole()) && ownerId.equals(requester.getId())) return true;
+        return "EMPLOYEE".equals(requester.getRole())
+                && requester.getOwner() != null
+                && ownerId.equals(requester.getOwner().getId());
+    }
+
+    private void assertCanManage(Reservation reservation, User requester) {        String role = requester.getRole();
         if ("ADMIN".equals(role)) {
             return;
         }
