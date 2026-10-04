@@ -26,4 +26,8 @@ public interface UserService {
     User uploadPhoto(Long id, MultipartFile file);
 
     User deletePhoto(Long id);
+
+    void requestPasswordReset(String email);
+
+    void resetPassword(String token, String newPassword);
 }

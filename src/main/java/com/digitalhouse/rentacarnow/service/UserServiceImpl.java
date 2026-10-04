@@ -3,16 +3,23 @@ package com.digitalhouse.rentacarnow.service;
 import com.digitalhouse.rentacarnow.entity.User;
 import com.digitalhouse.rentacarnow.exception.ConflictException;
 import com.digitalhouse.rentacarnow.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private static final Set<String> REGISTRATION_ROLES = Set.of("USER", "OWNER");
     private static final Set<String> ALL_ROLES = Set.of("USER", "OWNER", "EMPLOYEE", "ADMIN");
@@ -20,12 +27,17 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
+    private final MailService mailService;
+    private final String frontendUrl;
 
     public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder,
-                           FileStorageService fileStorageService) {
+                           FileStorageService fileStorageService, MailService mailService,
+                           @Value("${app.frontend.url}") String frontendUrl) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.fileStorageService = fileStorageService;
+        this.mailService = mailService;
+        this.frontendUrl = frontendUrl;
     }
 
     @Override
@@ -84,7 +96,13 @@ public class UserServiceImpl implements UserService {
         if (file != null && !file.isEmpty()) {
             user.setPhotoPath(fileStorageService.saveFile(file));
         }
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        try {
+            mailService.sendWelcome(saved);
+        } catch (Exception e) {
+            log.warn("Bienvenida no enviada a {}: {}", saved.getEmail(), e.getMessage());
+        }
+        return saved;
     }
 
     @Override
@@ -110,7 +128,43 @@ public class UserServiceImpl implements UserService {
         if (file != null && !file.isEmpty()) {
             user.setPhotoPath(fileStorageService.saveFile(file));
         }
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        try {
+            mailService.sendWelcome(saved);
+        } catch (Exception e) {
+            log.warn("Bienvenida no enviada a {}: {}", saved.getEmail(), e.getMessage());
+        }
+        return saved;
+    }
+
+    @Override
+    public void requestPasswordReset(String email) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return;
+        }
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(Instant.now().plusSeconds(3600));
+        userRepository.save(user);
+        try {
+            mailService.sendPasswordReset(user, frontendUrl + "/reset-password?token=" + token);
+        } catch (Exception e) {
+            log.warn("Reset no enviado a {}: {}", email, e.getMessage());
+        }
+    }
+
+    @Override
+    public void resetPassword(String token, String newPassword) {
+        User user = userRepository.findByResetToken(token)
+                .orElseThrow(() -> new ConflictException("Token inválido."));
+        if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(Instant.now())) {
+            throw new ConflictException("Token expirado.");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        userRepository.save(user);
     }
 
     @Override

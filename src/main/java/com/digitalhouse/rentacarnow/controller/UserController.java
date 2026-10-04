@@ -1,12 +1,15 @@
 package com.digitalhouse.rentacarnow.controller;
 
 import com.digitalhouse.rentacarnow.dto.ApiResponse;
+import com.digitalhouse.rentacarnow.dto.ForgotPasswordRequest;
 import com.digitalhouse.rentacarnow.dto.LoginRequest;
 import com.digitalhouse.rentacarnow.dto.LoginResponse;
+import com.digitalhouse.rentacarnow.dto.ResetPasswordRequest;
 import com.digitalhouse.rentacarnow.entity.User;
 import com.digitalhouse.rentacarnow.security.CurrentUserService;
 import com.digitalhouse.rentacarnow.security.JwtService;
 import com.digitalhouse.rentacarnow.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -78,6 +81,18 @@ public class UserController {
         User created = userService.createEmployee(name, lastName, email, password, phone, file, currentUserService.currentUser());
         created.setPassword(null);
         return ApiResponse.success(created);
+    }
+
+    @PostMapping("/forgot-password")
+    public ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        userService.requestPasswordReset(request.email());
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/reset-password")
+    public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        userService.resetPassword(request.token(), request.password());
+        return ApiResponse.success(null);
     }
 
     @PutMapping("/{id}/verify")

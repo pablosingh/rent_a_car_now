@@ -33,7 +33,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/users/login", "/api/users").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users/login", "/api/users", "/api/users/forgot-password", "/api/users/reset-password").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/*/photo").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/users/*/photo").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/users/employees").hasAnyRole("OWNER", "ADMIN")

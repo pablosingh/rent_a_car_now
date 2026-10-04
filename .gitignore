@@ -41,3 +41,6 @@ uploads/
 
 ### Agents ###
 AGENTS.md
+
+### Env ###
+.env
