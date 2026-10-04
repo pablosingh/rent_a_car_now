@@ -49,9 +49,11 @@ public class User {
     private String phone;
 
     @Column(name = "reset_token", unique = true)
+    @JsonIgnore
     private String resetToken;
 
     @Column(name = "reset_token_expiry")
+    @JsonIgnore
     private java.time.Instant resetTokenExpiry;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
