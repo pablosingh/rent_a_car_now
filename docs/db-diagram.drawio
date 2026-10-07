@@ -1,0 +1,82 @@
+<mxfile host="app.diagrams.net" version="25.0.0">
+  <diagram name="RentACarNow-ER" id="rentacarnow-er">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="users" value="&lt;b&gt;users&lt;/b&gt;&lt;hr&gt;id PK BIGINT AI&lt;br&gt;name VARCHAR NN&lt;br&gt;lastName VARCHAR NN&lt;br&gt;email VARCHAR NN&lt;br&gt;password VARCHAR NN (WRITE_ONLY)&lt;br&gt;role VARCHAR NN [USER|OWNER|EMPLOYEE|ADMIN]&lt;br&gt;verified BOOL NN&lt;br&gt;owner_id FK -&gt; users.id (EMPLOYEE-&amp;gt;OWNER)&lt;br&gt;photo_path VARCHAR&lt;br&gt;phone VARCHAR(20)&lt;br&gt;reset_token VARCHAR UNIQUE&lt;br&gt;reset_token_expiry TIMESTAMPTZ" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="270" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="category" value="&lt;b&gt;category&lt;/b&gt;&lt;hr&gt;id PK BIGINT AI&lt;br&gt;name VARCHAR NN UNIQUE&lt;br&gt;description VARCHAR" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="330" y="20" width="220" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="feature" value="&lt;b&gt;feature&lt;/b&gt;&lt;hr&gt;id PK BIGINT AI&lt;br&gt;name VARCHAR NN UNIQUE&lt;br&gt;icon VARCHAR" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="590" y="20" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="policy" value="&lt;b&gt;policy (aislada, sin FKs)&lt;/b&gt;&lt;hr&gt;id PK BIGINT AI&lt;br&gt;title VARCHAR NN UNIQUE&lt;br&gt;slug VARCHAR NN UNIQUE&lt;br&gt;content TEXT NN&lt;br&gt;display_order INT NN&lt;br&gt;updated_at TIMESTAMPTZ NN" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#f8cecc;strokeColor=#b85450;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="830" y="20" width="270" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="car" value="&lt;b&gt;car&lt;/b&gt;&lt;hr&gt;id PK BIGINT AI&lt;br&gt;plate VARCHAR NN UNIQUE&lt;br&gt;brand VARCHAR NN&lt;br&gt;model VARCHAR NN&lt;br&gt;year INT NN&lt;br&gt;pricePerDay DOUBLE NN&lt;br&gt;pricePerHour DOUBLE NN&lt;br&gt;available BOOL NN&lt;br&gt;category_id FK NN -&amp;gt; category.id&lt;br&gt;owner_id FK NN -&amp;gt; users.id" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="20" y="280" width="270" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="car_images" value="&lt;b&gt;car_images&lt;/b&gt; (@ElementCollection)&lt;hr&gt;car_id FK -&amp;gt; car.id&lt;br&gt;image_path VARCHAR" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="330" y="280" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="car_features" value="&lt;b&gt;car_features&lt;/b&gt; (join N:M)&lt;hr&gt;car_id FK -&amp;gt; car.id&lt;br&gt;feature_id FK -&amp;gt; feature.id" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="590" y="280" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="favorite" value="&lt;b&gt;favorite&lt;/b&gt;&lt;hr&gt;id PK BIGINT AI&lt;br&gt;user_id FK NN -&amp;gt; users.id&lt;br&gt;car_id FK NN -&amp;gt; car.id&lt;br&gt;created_at TIMESTAMPTZ NN&lt;br&gt;UNIQUE(user_id, car_id)" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="830" y="280" width="270" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="reservation" value="&lt;b&gt;reservation&lt;/b&gt;&lt;hr&gt;id PK BIGINT AI&lt;br&gt;startAt TIMESTAMPTZ NN&lt;br&gt;endAt TIMESTAMPTZ NN&lt;br&gt;totalPrice DECIMAL(10,2) NN&lt;br&gt;createdAt TIMESTAMPTZ NN&lt;br&gt;status VARCHAR NN [PENDING|DISPATCHED|...]&lt;br&gt;dispatchedAt TIMESTAMPTZ&lt;br&gt;dispatched_by_id FK -&amp;gt; users.id&lt;br&gt;completedAt TIMESTAMPTZ&lt;br&gt;completed_by_id FK -&amp;gt; users.id&lt;br&gt;cancelledAt TIMESTAMPTZ&lt;br&gt;car_id FK -&amp;gt; car.id&lt;br&gt;user_id FK -&amp;gt; users.id" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="20" y="520" width="270" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="rating" value="&lt;b&gt;rating&lt;/b&gt;&lt;hr&gt;id PK BIGINT AI&lt;br&gt;user_id FK NN -&amp;gt; users.id&lt;br&gt;car_id FK NN -&amp;gt; car.id&lt;br&gt;reservation_id FK NN UNIQUE -&amp;gt; reservation.id&lt;br&gt;score INT NN CHECK 1-5&lt;br&gt;comment TEXT&lt;br&gt;createdAt TIMESTAMPTZ NN&lt;br&gt;updatedAt TIMESTAMPTZ NN" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="330" y="520" width="270" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="e_users_self" value="1-N owner_id (EMPLOYEE-&gt;OWNER)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="users" target="users">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_users_car" value="1-N owns (owner_id NOT NULL)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="users" target="car">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cat_car" value="1-N category_id NOT NULL" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="category" target="car">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_car_images" value="1-N images" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="car" target="car_images">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_car_cf" value="N-M" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="car" target="car_features">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_feat_cf" value="N-M" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="feature" target="car_features">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_users_fav" value="1-N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="users" target="favorite">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_car_fav" value="1-N UNIQUE(user,car)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="car" target="favorite">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_users_res" value="1-N cliente (user_id)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="users" target="reservation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_car_res" value="1-N (car_id)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="car" target="reservation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_users_res_audit" value="audita dispatched/completed_by" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="users" target="reservation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_res_rating" value="1-1 reservation_id UNIQUE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;startArrow=ERone;" edge="1" parent="1" source="reservation" target="rating">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_users_rating" value="1-N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="users" target="rating">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_car_rating" value="1-N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERoneToMany;startArrow=ERone;" edge="1" parent="1" source="car" target="rating">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
