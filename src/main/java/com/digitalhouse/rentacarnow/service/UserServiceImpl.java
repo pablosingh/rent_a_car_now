@@ -1,7 +1,9 @@
 package com.digitalhouse.rentacarnow.service;
 
+import com.digitalhouse.rentacarnow.entity.Role;
 import com.digitalhouse.rentacarnow.entity.User;
 import com.digitalhouse.rentacarnow.exception.ConflictException;
+import com.digitalhouse.rentacarnow.repository.RoleRepository;
 import com.digitalhouse.rentacarnow.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,18 +24,22 @@ public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private static final Set<String> REGISTRATION_ROLES = Set.of("USER", "OWNER");
-    private static final Set<String> ALL_ROLES = Set.of("USER", "OWNER", "EMPLOYEE", "ADMIN");
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PermissionService permissionService;
     private final BCryptPasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
     private final MailService mailService;
     private final String frontendUrl;
 
-    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder,
+    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
+                           PermissionService permissionService, BCryptPasswordEncoder passwordEncoder,
                            FileStorageService fileStorageService, MailService mailService,
                            @Value("${app.frontend.url}") String frontendUrl) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.permissionService = permissionService;
         this.passwordEncoder = passwordEncoder;
         this.fileStorageService = fileStorageService;
         this.mailService = mailService;
@@ -42,10 +48,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> findAll(User requester) {
-        if ("ADMIN".equals(requester.getRole())) {
+        if (permissionService.isAdmin(requester)) {
             return userRepository.findAll();
         }
-        if ("OWNER".equals(requester.getRole())) {
+        if (requester.hasRole("OWNER")) {
             return userRepository.findByOwner_Id(requester.getId());
         }
         throw new AccessDeniedException("No tenés permiso para listar usuarios.");
@@ -67,7 +73,7 @@ public class UserServiceImpl implements UserService {
     public void deleteById(Integer id, User requester) {
         User user = userRepository.findById(id.longValue())
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-        if (!"ADMIN".equals(requester.getRole()) && !canManage(requester, user)) {
+        if (!permissionService.isAdmin(requester) && !canManage(requester, user)) {
             throw new AccessDeniedException("No tenés permiso para eliminar este usuario.");
         }
         if (user.getPhotoPath() != null) {
@@ -85,12 +91,14 @@ public class UserServiceImpl implements UserService {
         if (!REGISTRATION_ROLES.contains(resolvedRole)) {
             throw new AccessDeniedException("Solo se puede registrar como USER u OWNER.");
         }
+        Role roleEntity = roleRepository.findByName(resolvedRole)
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + resolvedRole));
         User user = new User();
         user.setName(name);
         user.setLastName(lastName);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
-        user.setRole(resolvedRole);
+        user.setRole(roleEntity);
         user.setVerified("USER".equals(resolvedRole));
         user.setPhone(resolvePhone(phone));
         if (file != null && !file.isEmpty()) {
@@ -107,23 +115,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User createEmployee(String name, String lastName, String email, String password, String phone, MultipartFile file, User requester) {
-        if ("OWNER".equals(requester.getRole()) && !Boolean.TRUE.equals(requester.getVerified())) {
-            throw new AccessDeniedException("Tu cuenta de OWNER debe estar verificada para crear empleados.");
-        }
-        if (!Set.of("OWNER", "ADMIN").contains(requester.getRole())) {
-            throw new AccessDeniedException("Solo un OWNER o ADMIN puede crear empleados.");
-        }
+        permissionService.require(requester, PermissionService.EMPLOYEE_MANAGE);
         if (userRepository.existsByEmail(email)) {
             throw new ConflictException("Ya existe un usuario con ese email.");
         }
+        Role roleEntity = roleRepository.findByName("EMPLOYEE")
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado: EMPLOYEE"));
         User user = new User();
         user.setName(name);
         user.setLastName(lastName);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
-        user.setRole("EMPLOYEE");
+        user.setRole(roleEntity);
         user.setVerified(true);
-        user.setOwner("OWNER".equals(requester.getRole()) ? requester : null);
+        user.setOwner(requester.hasRole("OWNER") ? requester : null);
         user.setPhone(resolvePhone(phone));
         if (file != null && !file.isEmpty()) {
             user.setPhotoPath(fileStorageService.saveFile(file));
@@ -170,7 +175,34 @@ public class UserServiceImpl implements UserService {
     @Override
     public User verifyUser(Long id) {
         User user = findById(id);
+        if (!user.hasRole("OWNER")) {
+            throw new ConflictException("Solo se puede verificar a un OWNER.");
+        }
         user.setVerified(true);
+        return userRepository.save(user);
+    }
+
+    @Override
+    public User assignRole(Long id, String roleName, Long ownerId, User requester) {
+        permissionService.require(requester, PermissionService.USER_ROLE_ASSIGN);
+        User user = findById(id);
+        String resolved = roleName == null ? null : roleName.toUpperCase();
+        Role roleEntity = roleRepository.findByName(resolved)
+                .orElseThrow(() -> new ConflictException("Rol inválido: " + roleName + "."));
+        if ("EMPLOYEE".equals(resolved)) {
+            if (ownerId == null) {
+                throw new ConflictException("Un EMPLOYEE necesita un OWNER asignado (ownerId).");
+            }
+            User owner = userRepository.findById(ownerId)
+                    .orElseThrow(() -> new RuntimeException("User not found with id: " + ownerId));
+            if (!owner.hasRole("OWNER")) {
+                throw new ConflictException("El ownerId debe corresponder a un usuario OWNER.");
+            }
+            user.setOwner(owner);
+        } else {
+            user.setOwner(null);
+        }
+        user.setRole(roleEntity);
         return userRepository.save(user);
     }
 
@@ -179,21 +211,20 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(newUser.getId())
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + newUser.getId()));
         boolean self = requester.getId() != null && requester.getId().equals(user.getId());
-        if (!"ADMIN".equals(requester.getRole()) && !self && !canManage(requester, user)) {
+        if (!permissionService.isAdmin(requester) && !self && !canManage(requester, user)) {
             throw new AccessDeniedException("No tenés permiso para modificar este usuario.");
         }
         if (newUser.getName() != null) user.setName(newUser.getName());
         if (newUser.getLastName() != null) user.setLastName(newUser.getLastName());
-        if (newUser.getEmail() != null && ("ADMIN".equals(requester.getRole()) || self)) user.setEmail(newUser.getEmail());
+        if (newUser.getEmail() != null && (permissionService.isAdmin(requester) || self)) user.setEmail(newUser.getEmail());
         if (newUser.getPhone() != null) user.setPhone(resolvePhone(newUser.getPhone()));
         if (newUser.getPassword() != null && !newUser.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(newUser.getPassword()));
         }
-        if (newUser.getRole() != null && "ADMIN".equals(requester.getRole())
-                && ALL_ROLES.contains(newUser.getRole().toUpperCase())) {
-            user.setRole(newUser.getRole().toUpperCase());
+        if (newUser.getPendingRoleName() != null) {
+            throw new ConflictException("El rol solo puede cambiarse desde PUT /api/users/{id}/role.");
         }
-        if (newUser.getVerified() != null && "ADMIN".equals(requester.getRole())) {
+        if (newUser.getVerified() != null && permissionService.isAdmin(requester)) {
             user.setVerified(newUser.getVerified());
         }
         return userRepository.save(user);
@@ -223,8 +254,8 @@ public class UserServiceImpl implements UserService {
     }
 
     private boolean canManage(User requester, User target) {
-        return "OWNER".equals(requester.getRole())
-                && "EMPLOYEE".equals(target.getRole())
+        return requester.hasRole("OWNER")
+                && target.hasRole("EMPLOYEE")
                 && target.getOwner() != null
                 && target.getOwner().getId().equals(requester.getId());
     }

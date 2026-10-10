@@ -4,6 +4,7 @@ import java.util.List;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,8 +34,18 @@ public class User {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
-    @Column(nullable = false)
-    private String role = "USER";
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id", nullable = false)
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private Role role;
+
+    @Transient
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private String roleNameInput;
 
     @Column(nullable = false)
     private Boolean verified = false;
@@ -64,4 +75,34 @@ public class User {
     @JsonIgnore
     private List<Car> ownedCars;
 
+    @JsonIgnore
+    public Role getRole() {
+        return role;
+    }
+
+    @JsonIgnore
+    public void setRole(Role role) {
+        this.role = role;
+        this.roleNameInput = null;
+    }
+
+    @JsonProperty("role")
+    public String getRoleName() {
+        if (roleNameInput != null) return roleNameInput;
+        return role != null ? role.getName() : null;
+    }
+
+    @JsonProperty("role")
+    public void setRoleName(String roleName) {
+        this.roleNameInput = roleName;
+    }
+
+    @JsonIgnore
+    public String getPendingRoleName() {
+        return roleNameInput;
+    }
+
+    public boolean hasRole(String name) {
+        return name != null && role != null && name.equals(role.getName());
+    }
 }

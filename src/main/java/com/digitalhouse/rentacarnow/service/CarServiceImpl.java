@@ -29,15 +29,17 @@ public class CarServiceImpl implements CarService {
     private final CategoryRepository categoryRepository;
     private final RatingRepository ratingRepository;
     private final FileStorageService fileStorageService;
+    private final PermissionService permissionService;
 
     public CarServiceImpl(CarRepository carRepository, UserRepository userRepository,
-                           FeatureRepository featureRepository, CategoryRepository categoryRepository, RatingRepository ratingRepository, FileStorageService fileStorageService) {
+                           FeatureRepository featureRepository, CategoryRepository categoryRepository, RatingRepository ratingRepository, FileStorageService fileStorageService, PermissionService permissionService) {
         this.carRepository = carRepository;
         this.userRepository = userRepository;
         this.featureRepository = featureRepository;
         this.categoryRepository = categoryRepository;
         this.ratingRepository = ratingRepository;
         this.fileStorageService = fileStorageService;
+        this.permissionService = permissionService;
     }
 
     @Override
@@ -88,8 +90,9 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public Car createCar(String plate, String brand, String model, Integer year, Double pricePerDay,
-                         Double pricePerHour, Boolean available, Long categoryId,
-                         Set<Long> featureIds, Long ownerId, User requester) {
+                          Double pricePerHour, Boolean available, Long categoryId,
+                          Set<Long> featureIds, Long ownerId, User requester) {
+        permissionService.require(requester, PermissionService.CAR_CREATE);
         if (carRepository.findByPlate(plate).isPresent()) {
             throw new ConflictException("Ya existe un auto con la patente: " + plate);
         }
@@ -111,6 +114,7 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public void deleteCarById(Long id, User requester) {
+        permissionService.require(requester, PermissionService.CAR_DELETE);
         Car car = carRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Car not found with id: " + id));
         assertCanManage(car, requester);
@@ -124,7 +128,8 @@ public class CarServiceImpl implements CarService {
     @Override
     public Car updateCar(String plate, String brand, String model, Integer year, Double pricePerDay,
                          Double pricePerHour, Boolean available, Long categoryId, Set<Long> featureIds,
-                         User requester) {
+                          User requester) {
+        permissionService.require(requester, PermissionService.CAR_EDIT);
         Car car = carRepository.findByPlate(plate)
                 .orElseThrow(() -> new RuntimeException("Car not found with plate: " + plate));
         assertCanManage(car, requester);
@@ -142,6 +147,7 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public Car uploadImage(String plate, MultipartFile file, User requester) {
+        permissionService.require(requester, PermissionService.CAR_EDIT);
         Car car = carRepository.findByPlate(plate)
                 .orElseThrow(() -> new RuntimeException("Car not found with plate: " + plate));
         assertCanManage(car, requester);
@@ -152,6 +158,7 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public void deleteImage(String plate, String imagePath, User requester) {
+        permissionService.require(requester, PermissionService.CAR_EDIT);
         Car car = carRepository.findByPlate(plate)
                 .orElseThrow(() -> new RuntimeException("Car not found with plate: " + plate));
         assertCanManage(car, requester);
@@ -161,22 +168,22 @@ public class CarServiceImpl implements CarService {
     }
 
     private User resolveOwner(Long ownerId, User requester) {
-        if ("OWNER".equals(requester.getRole())) {
+        if (requester.hasRole("OWNER")) {
             return requester;
         }
-        if ("EMPLOYEE".equals(requester.getRole())) {
+        if (requester.hasRole("EMPLOYEE")) {
             if (requester.getOwner() == null) {
                 throw new AccessDeniedException("Tu cuenta de EMPLOYEE no tiene OWNER asignado.");
             }
             return requester.getOwner();
         }
-        if ("ADMIN".equals(requester.getRole())) {
+        if (requester.hasRole("ADMIN")) {
             if (ownerId == null) {
                 throw new IllegalArgumentException("Un ADMIN debe indicar el ownerId del auto.");
             }
             User owner = userRepository.findById(ownerId)
                     .orElseThrow(() -> new RuntimeException("Owner not found with id: " + ownerId));
-            if (!"OWNER".equals(owner.getRole())) {
+            if (!owner.hasRole("OWNER")) {
                 throw new AccessDeniedException("El ownerId debe corresponder a un usuario OWNER.");
             }
             return owner;
@@ -185,14 +192,14 @@ public class CarServiceImpl implements CarService {
     }
 
     private void assertCanManage(Car car, User requester) {
-        if ("ADMIN".equals(requester.getRole())) {
+        if (requester.hasRole("ADMIN")) {
             return;
         }
         Long ownerId = car.getOwner() != null ? car.getOwner().getId() : null;
-        if ("OWNER".equals(requester.getRole()) && ownerId != null && ownerId.equals(requester.getId())) {
+        if (requester.hasRole("OWNER") && ownerId != null && ownerId.equals(requester.getId())) {
             return;
         }
-        if ("EMPLOYEE".equals(requester.getRole())
+        if (requester.hasRole("EMPLOYEE")
                 && requester.getOwner() != null
                 && ownerId != null
                 && ownerId.equals(requester.getOwner().getId())) {

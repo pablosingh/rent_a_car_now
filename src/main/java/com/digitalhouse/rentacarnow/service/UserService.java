@@ -21,6 +21,8 @@ public interface UserService {
 
     User verifyUser(Long id);
 
+    User assignRole(Long id, String roleName, Long ownerId, User requester);
+
     User updateUser(User newUser, User requester);
 
     User uploadPhoto(Long id, MultipartFile file);

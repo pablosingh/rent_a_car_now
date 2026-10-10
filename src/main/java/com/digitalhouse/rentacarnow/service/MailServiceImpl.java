@@ -33,7 +33,7 @@ public class MailServiceImpl implements MailService {
         String subject = "Bienvenido a " + fromName;
         String text = "Hola " + user.getName() + ",\n\n"
                 + "Tu cuenta en " + fromName + " fue creada con éxito.\n"
-                + ("OWNER".equals(user.getRole()) && !Boolean.TRUE.equals(user.getVerified())
+                + ("OWNER".equals(user.getRoleName()) && !Boolean.TRUE.equals(user.getVerified())
                         ? "Tu cuenta de OWNER está pendiente de verificación por un administrador.\n"
                         : "")
                 + "\nSaludos,\n" + fromName;

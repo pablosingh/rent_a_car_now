@@ -100,6 +100,13 @@ public class UserController {
         return ApiResponse.success(userService.verifyUser(id));
     }
 
+    @PutMapping("/{id}/role")
+    public ApiResponse<User> assignRole(@PathVariable Long id,
+                                        @RequestBody AssignRoleRequest request) {
+        return ApiResponse.success(userService.assignRole(
+                id, request.role(), request.ownerId(), currentUserService.currentUser()));
+    }
+
     private User requireCurrentUser() {
         return currentUserService.currentUser();
     }
@@ -107,7 +114,7 @@ public class UserController {
     private void assertCanModifyPhoto(Long id) {
         User target = userService.findById(id);
         User current = requireCurrentUser();
-        if (!current.getRole().equals("ADMIN") && !current.getEmail().equals(target.getEmail())) {
+        if (!current.hasRole("ADMIN") && !current.getEmail().equals(target.getEmail())) {
             throw new AccessDeniedException("No tenés permiso para cambiar esta foto.");
         }
     }

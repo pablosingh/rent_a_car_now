@@ -40,24 +40,25 @@ public class ReservationServiceImpl implements ReservationService {
     private final CarRepository carRepository;
     private final UserRepository userRepository;
     private final EntityManager entityManager;
+    private final PermissionService permissionService;
 
-    public ReservationServiceImpl(ReservationRepository reservationRepository, CarRepository carRepository, UserRepository userRepository, EntityManager entityManager) {
+    public ReservationServiceImpl(ReservationRepository reservationRepository, CarRepository carRepository, UserRepository userRepository, EntityManager entityManager, PermissionService permissionService) {
         this.reservationRepository = reservationRepository;
         this.carRepository = carRepository;
         this.userRepository = userRepository;
         this.entityManager = entityManager;
+        this.permissionService = permissionService;
     }
 
     @Override
     public List<Reservation> findAll(User requester) {
-        String role = requester.getRole();
-        if ("ADMIN".equals(role)) {
+        if (requester.hasRole("ADMIN")) {
             return reservationRepository.findAll();
         }
-        if ("OWNER".equals(role)) {
+        if (requester.hasRole("OWNER")) {
             return reservationRepository.findByCar_Owner_Id(requester.getId());
         }
-        if ("EMPLOYEE".equals(role)) {
+        if (requester.hasRole("EMPLOYEE")) {
             if (requester.getOwner() == null) {
                 throw new AccessDeniedException("Tu cuenta de EMPLOYEE no tiene OWNER asignado.");
             }
@@ -74,7 +75,7 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     public Page<Reservation> findHistory(Long userId, ReservationStatus status, Instant from, Instant to, Pageable pageable, User requester) {
         Long targetUserId = userId != null ? userId : requester.getId();
-        if (!targetUserId.equals(requester.getId()) && !"ADMIN".equals(requester.getRole())) {
+        if (!targetUserId.equals(requester.getId()) && !permissionService.isAdmin(requester)) {
             throw new AccessDeniedException("Solo ADMIN puede ver el historial de otro usuario.");
         }
         if (from != null && to != null && from.isAfter(to)) {
@@ -159,7 +160,7 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional
     public Reservation createReservation(Instant startAt, Instant endAt, Long car_id, Long user_id, User requester) {
-        if ("USER".equals(requester.getRole()) && !requester.getId().equals(user_id)) {
+        if (requester.hasRole("USER") && !requester.getId().equals(user_id)) {
             throw new AccessDeniedException("Un usuario solo puede reservar para sí mismo.");
         }
         validateDates(startAt, endAt);
@@ -199,6 +200,7 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));
         assertCanManage(reservation, requester);
+        permissionService.require(requester, PermissionService.DISPATCH_RESERVATION);
         assertStaff(requester);
         if (reservation.getStatus() != ReservationStatus.PENDING) {
             throw new ConflictException("Solo reservas PENDING pueden despacharse. Estado actual: " + reservation.getStatus());
@@ -215,6 +217,7 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));
         assertCanManage(reservation, requester);
+        permissionService.require(requester, PermissionService.COMPLETE_RESERVATION);
         assertStaff(requester);
         if (reservation.getStatus() != ReservationStatus.DISPATCHED) {
             throw new ConflictException("Solo reservas DISPATCHED pueden completarse. Estado actual: " + reservation.getStatus());
@@ -231,10 +234,13 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));
         assertCanManage(reservation, requester);
+        if (!requester.hasRole("USER")) {
+            permissionService.require(requester, PermissionService.CANCEL_ANY);
+        }
         if (reservation.getStatus() == ReservationStatus.COMPLETED || reservation.getStatus() == ReservationStatus.CANCELLED) {
             throw new ConflictException("No se puede cancelar una reserva " + reservation.getStatus());
         }
-        if ("USER".equals(requester.getRole()) && reservation.getStatus() != ReservationStatus.PENDING) {
+        if (requester.hasRole("USER") && reservation.getStatus() != ReservationStatus.PENDING) {
             throw new ConflictException("Como USER solo podés cancelar reservas PENDING. Estado actual: " + reservation.getStatus());
         }
         reservation.setStatus(ReservationStatus.CANCELLED);
@@ -248,6 +254,7 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));
         assertCanManage(reservation, requester);
+        permissionService.require(requester, PermissionService.REVERT_RESERVATION);
         assertStaff(requester);
         if (reservation.getStatus() == ReservationStatus.DISPATCHED) {
             reservation.setStatus(ReservationStatus.PENDING);
@@ -270,8 +277,7 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     private void assertStaff(User requester) {
-        String role = requester.getRole();
-        if ("OWNER".equals(role) || "EMPLOYEE".equals(role) || "ADMIN".equals(role)) {
+        if (requester.hasRole("OWNER") || requester.hasRole("EMPLOYEE") || requester.hasRole("ADMIN")) {
             return;
         }
         throw new AccessDeniedException("Solo OWNER, EMPLOYEE o ADMIN pueden realizar esta acción.");
@@ -283,7 +289,7 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + id));
         assertCanManage(reservation, requester);
-        if ("USER".equals(requester.getRole()) && !requester.getId().equals(user_id)) {
+        if (requester.hasRole("USER") && !requester.getId().equals(user_id)) {
             throw new AccessDeniedException("Un usuario solo puede reservar para sí mismo.");
         }
         validateDates(startAt, endAt);
@@ -366,7 +372,7 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new RuntimeException("Reservation not found with id: " + reservationId));
         boolean isOwner = reservation.getUser() != null && reservation.getUser().getId().equals(requester.getId());
-        boolean isAdmin = "ADMIN".equals(requester.getRole());
+        boolean isAdmin = requester.hasRole("ADMIN");
         boolean isStaff = isStaffOfCar(reservation.getCar(), requester);
         if (!isOwner && !isAdmin && !isStaff) {
             throw new AccessDeniedException("Solo el dueño de la reserva puede contactar al propietario.");
@@ -388,7 +394,7 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     private void assertCanContact(Car car, User requester) {
-        if ("ADMIN".equals(requester.getRole()) || isStaffOfCar(car, requester)) {
+        if (requester.hasRole("ADMIN") || isStaffOfCar(car, requester)) {
             return;
         }
         boolean hasReservation = reservationRepository.existsByUserIdAndCarId(requester.getId(), car.getId());
@@ -400,17 +406,17 @@ public class ReservationServiceImpl implements ReservationService {
     private boolean isStaffOfCar(Car car, User requester) {
         if (car == null || car.getOwner() == null) return false;
         Long ownerId = car.getOwner().getId();
-        if ("OWNER".equals(requester.getRole()) && ownerId.equals(requester.getId())) return true;
-        return "EMPLOYEE".equals(requester.getRole())
+        if (requester.hasRole("OWNER") && ownerId.equals(requester.getId())) return true;
+        return requester.hasRole("EMPLOYEE")
                 && requester.getOwner() != null
                 && ownerId.equals(requester.getOwner().getId());
     }
 
-    private void assertCanManage(Reservation reservation, User requester) {        String role = requester.getRole();
-        if ("ADMIN".equals(role)) {
+    private void assertCanManage(Reservation reservation, User requester) {
+        if (requester.hasRole("ADMIN")) {
             return;
         }
-        if ("USER".equals(role)) {
+        if (requester.hasRole("USER")) {
             if (reservation.getUser() != null && reservation.getUser().getId().equals(requester.getId())) {
                 return;
             }
@@ -419,10 +425,10 @@ public class ReservationServiceImpl implements ReservationService {
         Long carOwnerId = reservation.getCar() != null && reservation.getCar().getOwner() != null
                 ? reservation.getCar().getOwner().getId()
                 : null;
-        if ("OWNER".equals(role) && carOwnerId != null && carOwnerId.equals(requester.getId())) {
+        if (requester.hasRole("OWNER") && carOwnerId != null && carOwnerId.equals(requester.getId())) {
             return;
         }
-        if ("EMPLOYEE".equals(role)
+        if (requester.hasRole("EMPLOYEE")
                 && requester.getOwner() != null
                 && carOwnerId != null
                 && carOwnerId.equals(requester.getOwner().getId())) {

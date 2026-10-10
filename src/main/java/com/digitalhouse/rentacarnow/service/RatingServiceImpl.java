@@ -21,10 +21,12 @@ public class RatingServiceImpl implements RatingService {
 
     private final RatingRepository ratingRepository;
     private final ReservationRepository reservationRepository;
+    private final PermissionService permissionService;
 
-    public RatingServiceImpl(RatingRepository ratingRepository, ReservationRepository reservationRepository) {
+    public RatingServiceImpl(RatingRepository ratingRepository, ReservationRepository reservationRepository, PermissionService permissionService) {
         this.ratingRepository = ratingRepository;
         this.reservationRepository = reservationRepository;
+        this.permissionService = permissionService;
     }
 
     @Override
@@ -32,7 +34,7 @@ public class RatingServiceImpl implements RatingService {
     public Rating create(RatingRequest request, User requester) {
         Reservation reservation = reservationRepository.findById(request.reservationId())
                 .orElseThrow(() -> new RuntimeException("Reserva no encontrada con id: " + request.reservationId()));
-        if (!reservation.getUser().getId().equals(requester.getId()) && !"ADMIN".equals(requester.getRole())) {
+        if (!reservation.getUser().getId().equals(requester.getId()) && !permissionService.isAdmin(requester)) {
             throw new AccessDeniedException("Solo podés puntuar tus propias reservas.");
         }
         if (reservation.getStatus() != ReservationStatus.COMPLETED) {
@@ -58,7 +60,7 @@ public class RatingServiceImpl implements RatingService {
     public Rating update(Long id, Integer score, String comment, User requester) {
         Rating rating = ratingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Puntuación no encontrada con id: " + id));
-        if (!rating.getUser().getId().equals(requester.getId()) && !"ADMIN".equals(requester.getRole())) {
+        if (!rating.getUser().getId().equals(requester.getId()) && !permissionService.isAdmin(requester)) {
             throw new AccessDeniedException("Solo podés editar tu propia puntuación.");
         }
         if (score != null) {
@@ -74,7 +76,7 @@ public class RatingServiceImpl implements RatingService {
     public void delete(Long id, User requester) {
         Rating rating = ratingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Puntuación no encontrada con id: " + id));
-        if (!rating.getUser().getId().equals(requester.getId()) && !"ADMIN".equals(requester.getRole())) {
+        if (!rating.getUser().getId().equals(requester.getId()) && !permissionService.isAdmin(requester)) {
             throw new AccessDeniedException("Solo podés borrar tu propia puntuación.");
         }
         ratingRepository.delete(rating);
@@ -94,10 +96,10 @@ public class RatingServiceImpl implements RatingService {
     public Rating findByReservation(Long reservationId, User requester) {
         Rating rating = ratingRepository.findByReservation_Id(reservationId)
                 .orElseThrow(() -> new RuntimeException("Puntuación no encontrada para la reserva: " + reservationId));
-        if (!rating.getUser().getId().equals(requester.getId()) && !"ADMIN".equals(requester.getRole())) {
+        if (!rating.getUser().getId().equals(requester.getId()) && !permissionService.isAdmin(requester)) {
             Long carOwnerId = rating.getCar() != null && rating.getCar().getOwner() != null ? rating.getCar().getOwner().getId() : null;
-            boolean isStaffOwner = "OWNER".equals(requester.getRole()) && carOwnerId != null && carOwnerId.equals(requester.getId());
-            boolean isStaffEmployee = "EMPLOYEE".equals(requester.getRole()) && requester.getOwner() != null && carOwnerId != null && carOwnerId.equals(requester.getOwner().getId());
+            boolean isStaffOwner = requester.hasRole("OWNER") && carOwnerId != null && carOwnerId.equals(requester.getId());
+            boolean isStaffEmployee = requester.hasRole("EMPLOYEE") && requester.getOwner() != null && carOwnerId != null && carOwnerId.equals(requester.getOwner().getId());
             if (!isStaffOwner && !isStaffEmployee) {
                 throw new AccessDeniedException("No tenés permiso para ver esta puntuación.");
             }
