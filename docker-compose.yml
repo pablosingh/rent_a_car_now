@@ -10,8 +10,9 @@ services:
       - "5430:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./db/seed_full.sql:/docker-entrypoint-initdb.d/01_seed_full.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rentacarnow -d rentacarnow"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U rentacarnow -d rentacarnow"]
       interval: 5s
       timeout: 5s
       retries: 5
