@@ -16,9 +16,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class CarServiceImpl implements CarService {
@@ -220,6 +223,13 @@ public class CarServiceImpl implements CarService {
         if (featureIds == null || featureIds.isEmpty()) {
             return new HashSet<>();
         }
-        return new HashSet<>(featureRepository.findAllById(featureIds));
+        List<Feature> features = new ArrayList<>(featureRepository.findAllById(featureIds));
+        if (features.size() != featureIds.size()) {
+            Set<Long> foundIds = features.stream().map(Feature::getId).collect(Collectors.toSet());
+            Set<Long> missing = new LinkedHashSet<>(featureIds);
+            missing.removeAll(foundIds);
+            throw new ConflictException("Las features con id " + missing + " no existen. Crealas primero en /admin/features.");
+        }
+        return new HashSet<>(features);
     }
 }

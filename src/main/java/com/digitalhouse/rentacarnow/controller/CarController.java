@@ -2,6 +2,8 @@ package com.digitalhouse.rentacarnow.controller;
 
 import com.digitalhouse.rentacarnow.dto.ApiResponse;
 import com.digitalhouse.rentacarnow.dto.AvailabilitySlot;
+import com.digitalhouse.rentacarnow.dto.CarRequest;
+import com.digitalhouse.rentacarnow.dto.CarUpdateRequest;
 import com.digitalhouse.rentacarnow.dto.OwnerContactResponse;
 import com.digitalhouse.rentacarnow.dto.PageResponse;
 import com.digitalhouse.rentacarnow.entity.Car;
@@ -19,6 +21,7 @@ import jakarta.validation.Valid;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/cars")
@@ -76,14 +79,14 @@ public class CarController {
     }
 
     @PostMapping
-    public ApiResponse<Car> createCar(@Valid @RequestBody Car car,
+    public ApiResponse<Car> createCar(@Valid @RequestBody CarRequest request,
                                       @RequestParam(required = false) Long ownerId) {
-        Set<Long> featureIds = car.getFeatures() != null
-                ? car.getFeatures().stream().map(f -> f.getId()).collect(java.util.stream.Collectors.toSet())
+        Set<Long> featureIds = request.features() != null
+                ? request.features().stream().map(f -> f.id()).collect(Collectors.toSet())
                 : Set.of();
-        Long categoryId = car.getCategory() != null ? car.getCategory().getId() : null;
-        return ApiResponse.success(carService.createCar(car.getPlate(), car.getBrand(), car.getModel(),
-                car.getYear(), car.getPricePerDay(), car.getPricePerHour(), car.getAvailable(), categoryId,
+        Long categoryId = request.category() != null ? request.category().id() : null;
+        return ApiResponse.success(carService.createCar(request.plate(), request.brand(), request.model(),
+                request.year(), request.pricePerDay(), request.pricePerHour(), request.available(), categoryId,
                 featureIds, ownerId, currentUserService.currentUser()));
     }
 
@@ -95,13 +98,13 @@ public class CarController {
 
     @PutMapping("/{plate}")
     public ApiResponse<Car> updateCar(@PathVariable String plate,
-                                      @RequestBody Car car) {
-        Set<Long> featureIds = car.getFeatures() != null
-                ? car.getFeatures().stream().map(f -> f.getId()).collect(java.util.stream.Collectors.toSet())
+                                      @Valid @RequestBody CarUpdateRequest request) {
+        Set<Long> featureIds = request.features() != null
+                ? request.features().stream().map(f -> f.id()).collect(Collectors.toSet())
                 : Set.of();
-        Long categoryId = car.getCategory() != null ? car.getCategory().getId() : null;
-        return ApiResponse.success(carService.updateCar(plate, car.getBrand(), car.getModel(),
-                car.getYear(), car.getPricePerDay(), car.getPricePerHour(), car.getAvailable(),
+        Long categoryId = request.category() != null ? request.category().id() : null;
+        return ApiResponse.success(carService.updateCar(plate, request.brand(), request.model(),
+                request.year(), request.pricePerDay(), request.pricePerHour(), request.available(),
                 categoryId, featureIds, currentUserService.currentUser()));
     }
 
