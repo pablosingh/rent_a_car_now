@@ -14,9 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -24,6 +26,8 @@ public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private static final Set<String> REGISTRATION_ROLES = Set.of("USER", "OWNER");
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -84,6 +88,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User createUser(String name, String lastName, String email, String password, String role, String phone, MultipartFile file) {
+        validateUserData(name, lastName, email, password);
+        name = name.trim();
+        lastName = lastName.trim();
+        email = email.trim();
         if (userRepository.existsByEmail(email)) {
             throw new ConflictException("Ya existe un usuario con ese email.");
         }
@@ -116,6 +124,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public User createEmployee(String name, String lastName, String email, String password, String phone, MultipartFile file, User requester) {
         permissionService.require(requester, PermissionService.EMPLOYEE_MANAGE);
+        validateUserData(name, lastName, email, password);
+        name = name.trim();
+        lastName = lastName.trim();
+        email = email.trim();
         if (userRepository.existsByEmail(email)) {
             throw new ConflictException("Ya existe un usuario con ese email.");
         }
@@ -266,6 +278,29 @@ public class UserServiceImpl implements UserService {
             return PhoneUtils.normalize(phone);
         } catch (IllegalArgumentException e) {
             throw new ConflictException(e.getMessage());
+        }
+    }
+
+    private void validateUserData(String name, String lastName, String email, String password) {
+        List<String> errors = new ArrayList<>();
+        if (name == null || name.isBlank()) {
+            errors.add("El nombre es obligatorio.");
+        }
+        if (lastName == null || lastName.isBlank()) {
+            errors.add("El apellido es obligatorio.");
+        }
+        if (email == null || email.isBlank()) {
+            errors.add("El email es obligatorio.");
+        } else if (!EMAIL_PATTERN.matcher(email.trim()).matches()) {
+            errors.add("Ingresá un email válido.");
+        }
+        if (password == null || password.isBlank()) {
+            errors.add("La contraseña es obligatoria.");
+        } else if (password.length() < 6) {
+            errors.add("La contraseña debe tener al menos 6 caracteres.");
+        }
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(String.join(" ", errors));
         }
     }
 }
