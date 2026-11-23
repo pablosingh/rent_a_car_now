@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -63,7 +64,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User findByEmail(String email) {
-        return userRepository.findByEmail(email)
+        return userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
     }
 
@@ -91,8 +92,8 @@ public class UserServiceImpl implements UserService {
         validateUserData(name, lastName, email, password);
         name = name.trim();
         lastName = lastName.trim();
-        email = email.trim();
-        if (userRepository.existsByEmail(email)) {
+        email = email.trim().toLowerCase(Locale.ROOT);
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new ConflictException("Ya existe un usuario con ese email.");
         }
         String resolvedRole = role == null || role.isBlank() ? "USER" : role.toUpperCase();
@@ -127,8 +128,8 @@ public class UserServiceImpl implements UserService {
         validateUserData(name, lastName, email, password);
         name = name.trim();
         lastName = lastName.trim();
-        email = email.trim();
-        if (userRepository.existsByEmail(email)) {
+        email = email.trim().toLowerCase(Locale.ROOT);
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new ConflictException("Ya existe un usuario con ese email.");
         }
         Role roleEntity = roleRepository.findByName("EMPLOYEE")
@@ -156,7 +157,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void requestPasswordReset(String email) {
-        User user = userRepository.findByEmail(email).orElse(null);
+        User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
         if (user == null) {
             return;
         }
@@ -228,7 +229,9 @@ public class UserServiceImpl implements UserService {
         }
         if (newUser.getName() != null) user.setName(newUser.getName());
         if (newUser.getLastName() != null) user.setLastName(newUser.getLastName());
-        if (newUser.getEmail() != null && (permissionService.isAdmin(requester) || self)) user.setEmail(newUser.getEmail());
+        if (newUser.getEmail() != null && (permissionService.isAdmin(requester) || self)) {
+            user.setEmail(newUser.getEmail().trim().toLowerCase(Locale.ROOT));
+        }
         if (newUser.getPhone() != null) user.setPhone(resolvePhone(newUser.getPhone()));
         if (newUser.getPassword() != null && !newUser.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(newUser.getPassword()));

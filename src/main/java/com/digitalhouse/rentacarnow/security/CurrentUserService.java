@@ -17,7 +17,7 @@ public class CurrentUserService {
 
     public User currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return userRepository.findByEmail(authentication.getName())
+        return userRepository.findByEmailIgnoreCase(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + authentication.getName()));
     }
 }

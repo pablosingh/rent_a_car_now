@@ -76,20 +76,35 @@ class UserServiceImplTest {
     void createUser_valido_guardaConTrimYRolPorDefecto() {
         Role userRole = new Role();
         userRole.setName("USER");
-        when(userRepository.existsByEmail("ana@mail.com")).thenReturn(false);
+        when(userRepository.existsByEmailIgnoreCase("ana@mail.com")).thenReturn(false);
         when(roleRepository.findByName("USER")).thenReturn(Optional.of(userRole));
         when(passwordEncoder.encode("secret1")).thenReturn("$2a$10$hash");
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
         User created = userService.createUser("  Ana ", "  Pérez ", "  ana@mail.com  ", "secret1", null, null, null);
 
-        verify(userRepository).existsByEmail("ana@mail.com");
+        verify(userRepository).existsByEmailIgnoreCase("ana@mail.com");
         assertThat(created.getName()).isEqualTo("Ana");
         assertThat(created.getLastName()).isEqualTo("Pérez");
         assertThat(created.getEmail()).isEqualTo("ana@mail.com");
         assertThat(created.getPassword()).isEqualTo("$2a$10$hash");
         assertThat(created.getRole().getName()).isEqualTo("USER");
         assertThat(created.getVerified()).isTrue();
+    }
+
+    @Test
+    void createUser_normalizaEmailAMinusculas() {
+        Role userRole = new Role();
+        userRole.setName("USER");
+        when(userRepository.existsByEmailIgnoreCase("ana@mail.com")).thenReturn(false);
+        when(roleRepository.findByName("USER")).thenReturn(Optional.of(userRole));
+        when(passwordEncoder.encode("secret1")).thenReturn("$2a$10$hash");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        User created = userService.createUser("Ana", "Pérez", "ANA@Mail.COM", "secret1", null, null, null);
+
+        verify(userRepository).existsByEmailIgnoreCase("ana@mail.com");
+        assertThat(created.getEmail()).isEqualTo("ana@mail.com");
     }
 
     @Test
