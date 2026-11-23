@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/cars/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/features", "/api/features/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/features/**").hasAuthority("CATALOG_MANAGE")
+                        .requestMatchers(HttpMethod.PUT, "/api/features/**").hasAuthority("CATALOG_MANAGE")
                         .requestMatchers(HttpMethod.DELETE, "/api/features/**").hasAuthority("CATALOG_MANAGE")
                         .requestMatchers(HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/categories/**").hasAuthority("CATALOG_MANAGE")

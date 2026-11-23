@@ -27,6 +27,13 @@ public class FeatureController {
         return ApiResponse.success(featureService.create(name, icon));
     }
 
+    @PutMapping("/{id}")
+    public ApiResponse<Feature> update(@PathVariable Long id,
+                                       @RequestParam String name,
+                                       @RequestParam(value = "icon", required = false) String icon) {
+        return ApiResponse.success(featureService.update(id, name, icon));
+    }
+
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         featureService.delete(id);

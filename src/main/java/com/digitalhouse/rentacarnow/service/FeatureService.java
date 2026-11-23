@@ -9,5 +9,7 @@ public interface FeatureService {
 
     Feature create(String name, String icon);
 
+    Feature update(Long id, String name, String icon);
+
     void delete(Long id);
 }
