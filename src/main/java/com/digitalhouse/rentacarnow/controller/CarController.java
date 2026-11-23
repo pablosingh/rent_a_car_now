@@ -43,10 +43,12 @@ public class CarController {
             @RequestParam(required = false) Long ownerId,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String feature,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
             @PageableDefault(size = 10) Pageable pageable) {
         Page<Car> page = ownerId != null
                 ? carService.findByOwner(ownerId, pageable)
-                : carService.findAll(available, category, q, feature, pageable);
+                : carService.findAll(available, category, q, feature, from, to, pageable);
         return ApiResponse.success(PageResponse.from(page));
     }
 
@@ -56,8 +58,10 @@ public class CarController {
             @RequestParam(required = false) Boolean available,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String q,
-            @RequestParam(required = false) String feature) {
-        return ApiResponse.success(carService.findRandom(limit, available, category, q, feature));
+            @RequestParam(required = false) String feature,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
+        return ApiResponse.success(carService.findRandom(limit, available, category, q, feature, from, to));
     }
 
     @GetMapping("/{plate}")

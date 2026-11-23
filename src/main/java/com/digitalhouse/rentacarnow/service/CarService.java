@@ -6,16 +6,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
 public interface CarService {
 
-    Page<Car> findAll(Boolean available, String category, String q, String feature, Pageable pageable);
+    Page<Car> findAll(Boolean available, String category, String q, String feature, Instant from, Instant to, Pageable pageable);
 
     Page<Car> findByOwner(Long ownerId, Pageable pageable);
 
-    List<Car> findRandom(Integer limit, Boolean available, String category, String q, String feature);
+    List<Car> findRandom(Integer limit, Boolean available, String category, String q, String feature, Instant from, Instant to);
 
     Car findByPlate(String plate);
 

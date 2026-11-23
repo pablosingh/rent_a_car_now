@@ -16,6 +16,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -46,23 +47,8 @@ public class CarServiceImpl implements CarService {
     }
 
     @Override
-    public Page<Car> findAll(Boolean available, String category, String q, String feature, Pageable pageable) {
-        if (q != null && !q.isBlank()) {
-            return carRepository.search(q, category, available, feature, pageable);
-        }
-        if (feature != null && !feature.isBlank()) {
-            return carRepository.findByFeatureName(feature, pageable);
-        }
-        if (available == null && category == null) {
-            return carRepository.findAll(pageable);
-        }
-        if (available == null) {
-            return carRepository.findByCategory_Name(category, pageable);
-        }
-        if (category == null) {
-            return carRepository.findByAvailable(available, pageable);
-        }
-        return carRepository.findByCategory_NameAndAvailable(category, available, pageable);
+    public Page<Car> findAll(Boolean available, String category, String q, String feature, Instant from, Instant to, Pageable pageable) {
+        return carRepository.search(q, category, available, feature, from, to, pageable);
     }
 
     @Override
@@ -71,18 +57,12 @@ public class CarServiceImpl implements CarService {
     }
 
     @Override
-    public List<Car> findRandom(Integer limit, Boolean available, String category, String q, String feature) {
+    public List<Car> findRandom(Integer limit, Boolean available, String category, String q, String feature, Instant from, Instant to) {
         int size = limit == null ? 10 : Math.min(limit, 50);
         if (size <= 0) {
             return List.of();
         }
-        if (q != null && !q.isBlank()) {
-            return carRepository.findRandomWithSearch(size, available, category, q, feature);
-        }
-        if (feature != null && !feature.isBlank()) {
-            return carRepository.findRandomByFeature(size, available, category, feature);
-        }
-        return carRepository.findRandom(size, available, category);
+        return carRepository.findRandomWithSearch(size, available, category, q, feature, from, to);
     }
 
     @Override
