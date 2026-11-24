@@ -18,8 +18,8 @@ public record CarUpdateRequest(
         @Size(max = 100, message = "El modelo no puede superar los 100 caracteres.")
         String model,
         @NotNull(message = "El año es obligatorio.")
-        @Min(value = 1950, message = "El año no puede ser anterior a 1950.")
-        @Max(value = 2030, message = "El año no puede ser posterior a 2030.")
+        @Min(value = 2010, message = "El año no puede ser anterior a 2010.")
+        @Max(value = 2026, message = "El año no puede ser posterior a 2026.")
         Integer year,
         @NotNull(message = "El precio por día es obligatorio.")
         @DecimalMin(value = "0.01", message = "El precio por día debe ser mayor a 0.")
